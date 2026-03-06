@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  TECHNICIAN
+}
+
+enum EquipmentStatus {
+  ACTIVE
+  IN_MAINTENANCE
+  REMOVED
+  REPLACED
+  INACTIVE
+}
+
+enum VisitType {
+  PREVENTIVE
+  CORRECTIVE
+  INSTALLATION
+  REPLACEMENT
+  REMOVAL
+  INSPECTION
+}
+
+enum VisitStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+  PENDING_RETURN
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  passwordHash  String
+  role          UserRole      @default(TECHNICIAN)
+  isActive      Boolean       @default(true)
+  technician    Technician?
+  createdVisits Visit[]       @relation("VisitCreatedBy")
+  activityLogs  ActivityLog[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Technician {
+  id        String   @id @default(cuid())
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String
+  email     String?  @unique
+  phone     String?
+  isActive  Boolean  @default(true)
+  visits    Visit[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id        String         @id @default(cuid())
+  legalName String
+  tradeName String?
+  document  String?        @unique
+  email     String?
+  phone     String?
+  notes     String?
+  isActive  Boolean        @default(true)
+  units     CustomerUnit[]
+  equipment Equipment[]
+  visits    Visit[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([legalName])
+  @@index([tradeName])
+}
+
+model CustomerUnit {
+  id           String      @id @default(cuid())
+  customerId   String
+  customer     Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name         String
+  contactName  String?
+  contactPhone String?
+  street       String?
+  number       String?
+  district     String?
+  city         String?
+  state        String?
+  zipCode      String?
+  notes        String?
+  isActive     Boolean     @default(true)
+  equipment    Equipment[]
+  visits       Visit[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([customerId])
+  @@index([name])
+  @@unique([customerId, name])
+}
+
+model Equipment {
+  id                       String          @id @default(cuid())
+  customerId               String
+  unitId                   String
+  customer                 Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  unit                     CustomerUnit    @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  assetTag                 String?
+  serialNumber             String?
+  equipmentType            String
+  brand                    String?
+  model                    String?
+  installationDate         DateTime?
+  maintenanceFrequencyDays Int?
+  status                   EquipmentStatus @default(ACTIVE)
+  notes                    String?
+  visits                   Visit[]
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+
+  @@index([customerId])
+  @@index([unitId])
+  @@index([equipmentType])
+  @@index([status])
+  @@index([serialNumber])
+  @@index([assetTag])
+  @@unique([unitId, assetTag])
+}
+
+model Visit {
+  id               String       @id @default(cuid())
+  equipmentId      String
+  customerId       String
+  unitId           String
+  technicianId     String?
+  scheduledAt      DateTime
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  visitType        VisitType
+  status           VisitStatus  @default(SCHEDULED)
+  reportedIssue    String?
+  servicePerformed String?
+  technicalNotes   String?
+  requiresReturn   Boolean      @default(false)
+  returnDueDate    DateTime?
+  createdByUserId  String
+  equipment        Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  customer         Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  unit             CustomerUnit @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  technician       Technician?  @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  createdBy        User         @relation("VisitCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([equipmentId])
+  @@index([customerId])
+  @@index([unitId])
+  @@index([technicianId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([visitType])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  entityType  String
+  entityId    String
+  action      String
+  description String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
