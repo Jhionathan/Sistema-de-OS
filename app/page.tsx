@@ -1,16 +1,12 @@
-import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default async function Page() {
+export default async function HomePage() {
+  const session = await auth();
 
-  const customers = await prisma.customer.findMany()
+  if (session?.user) {
+    redirect("/dashboard");
+  }
 
-  return (
-    <div className="p-10">
-      <h1 className="text-2xl font-bold">Clientes</h1>
-
-      <pre>
-        {JSON.stringify(customers, null, 2)}
-      </pre>
-    </div>
-  )
+  redirect("/login");
 }
