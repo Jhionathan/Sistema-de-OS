@@ -1,31 +1,31 @@
 import Link from "next/link";
-import { getCustomers } from "@/server/queries/customer-queries";
-import { CustomersTable } from "@/components/ui/tables/customers-table";
+import { getUnits } from "@/server/queries/unit-queries";
+import { UnitsTable } from "@/components/ui/tables/units-table";
 
-export default async function CustomersPage() {
-  const customers = await getCustomers();
+export default async function UnitsPage() {
+  const units = await getUnits();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Clientes
+            Unidades
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gerencie os clientes cadastrados no sistema.
+            Gerencie os locais de atendimento dos clientes.
           </p>
         </div>
 
         <Link
-          href="/customers/new"
+          href="/units/new"
           className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
         >
-          Novo cliente
+          Nova unidade
         </Link>
       </div>
 
-      <CustomersTable customers={customers} />
+      <UnitsTable units={units} />
     </div>
   );
 }

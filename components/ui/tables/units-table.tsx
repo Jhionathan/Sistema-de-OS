@@ -1,15 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import type { Customer } from "@prisma/client";
-import { toggleCustomerStatus } from "@/server/actions/customer-action";
+import { toggleUnitStatus } from "@/server/actions/unit-action";
 import { useTransition } from "react";
 
-type CustomersTableProps = {
-  customers: Customer[];
+type UnitRow = {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  isActive: boolean;
+  customer: {
+    legalName: string;
+    tradeName: string | null;
+  };
+  equipment: { id: string }[];
+  visits: { id: string }[];
 };
 
-export function CustomersTable({ customers }: CustomersTableProps) {
+type UnitsTableProps = {
+  units: UnitRow[];
+};
+
+export function UnitsTable({ units }: UnitsTableProps) {
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -18,10 +33,13 @@ export function CustomersTable({ customers }: CustomersTableProps) {
         <thead className="bg-slate-50">
           <tr>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Unidade
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Cliente
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Documento
+              Local
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Contato
@@ -36,49 +54,51 @@ export function CustomersTable({ customers }: CustomersTableProps) {
         </thead>
 
         <tbody className="divide-y divide-slate-100">
-          {customers.map((customer) => (
-            <tr key={customer.id}>
+          {units.map((unit) => (
+            <tr key={unit.id}>
               <td className="px-4 py-4">
-                <div className="font-medium text-slate-900">
-                  {customer.tradeName || customer.legalName}
+                <div className="font-medium text-slate-900">{unit.name}</div>
+                <div className="text-sm text-slate-500">
+                  {unit.equipment.length} equipamentos • {unit.visits.length} visitas
                 </div>
-                {customer.tradeName ? (
-                  <div className="text-sm text-slate-500">{customer.legalName}</div>
-                ) : null}
               </td>
 
               <td className="px-4 py-4 text-sm text-slate-600">
-                {customer.document || "-"}
+                {unit.customer.tradeName || unit.customer.legalName}
               </td>
 
               <td className="px-4 py-4 text-sm text-slate-600">
-                <div>{customer.email || "-"}</div>
-                <div>{customer.phone || ""}</div>
+                {unit.city || "-"} / {unit.state || "-"}
+              </td>
+
+              <td className="px-4 py-4 text-sm text-slate-600">
+                <div>{unit.contactName || "-"}</div>
+                <div>{unit.contactPhone || ""}</div>
               </td>
 
               <td className="px-4 py-4">
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                    customer.isActive
+                    unit.isActive
                       ? "bg-green-100 text-green-700"
                       : "bg-slate-200 text-slate-700"
                   }`}
                 >
-                  {customer.isActive ? "Ativo" : "Inativo"}
+                  {unit.isActive ? "Ativa" : "Inativa"}
                 </span>
               </td>
 
               <td className="px-4 py-4 text-right">
                 <div className="flex justify-end gap-2">
                   <Link
-                    href={`/customers/${customer.id}`}
+                    href={`/units/${unit.id}`}
                     className="rounded-lg border px-3 py-1.5 text-sm text-slate-700"
                   >
                     Ver
                   </Link>
 
                   <Link
-                    href={`/customers/${customer.id}/edit`}
+                    href={`/units/${unit.id}/edit`}
                     className="rounded-lg border px-3 py-1.5 text-sm text-slate-700"
                   >
                     Editar
@@ -88,22 +108,22 @@ export function CustomersTable({ customers }: CustomersTableProps) {
                     disabled={isPending}
                     onClick={() =>
                       startTransition(async () => {
-                        await toggleCustomerStatus(customer.id, !customer.isActive);
+                        await toggleUnitStatus(unit.id, !unit.isActive);
                       })
                     }
                     className="rounded-lg border px-3 py-1.5 text-sm text-slate-700 disabled:opacity-60"
                   >
-                    {customer.isActive ? "Inativar" : "Ativar"}
+                    {unit.isActive ? "Inativar" : "Ativar"}
                   </button>
                 </div>
               </td>
             </tr>
           ))}
 
-          {customers.length === 0 ? (
+          {units.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-500">
-                Nenhum cliente cadastrado.
+              <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
+                Nenhuma unidade cadastrada.
               </td>
             </tr>
           ) : null}
