@@ -1,12 +1,16 @@
 import { notFound } from "next/navigation";
 import { UnitForm } from "@/components/ui/forms/unit-form";
 import { getCustomersForSelect, getUnitById } from "@/server/queries/unit-queries";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 type EditUnitPageProps = {
   params: Promise<{ id: string }>;
 };
 
 export default async function EditUnitPage({ params }: EditUnitPageProps) {
+  await requireMasterDataAccess();
+  
   const { id } = await params;
   const unit = await getUnitById(id);
   const customers = await getCustomersForSelect();

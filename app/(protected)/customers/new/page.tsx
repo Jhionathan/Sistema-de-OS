@@ -1,6 +1,10 @@
 import { CustomerForm } from "@/components/ui/forms/customer-form";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
 
-export default function NewCustomerPage() {
+
+export default async function NewCustomerPage() {
+  await requireMasterDataAccess();
+
   return (
     <div className="space-y-6">
       <div>

@@ -1,7 +1,58 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
-export async function getVisits() {
+type GetVisitsFilters = {
+  status?: string;
+  visitType?: string;
+  technicianId?: string;
+  customerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export async function getVisits(filters?: GetVisitsFilters) {
+  const where: Prisma.VisitWhereInput = {};
+
+  if (filters?.status) {
+    where.status = filters.status as Prisma.EnumVisitStatusFilter["equals"];
+  }
+
+  if (filters?.visitType) {
+    where.visitType =
+      filters.visitType as Prisma.EnumVisitTypeFilter["equals"];
+  }
+
+  if (filters?.technicianId) {
+    where.technicianId = filters.technicianId;
+  }
+
+  if (filters?.customerId) {
+    where.customerId = filters.customerId;
+  }
+
+  if (filters?.dateFrom || filters?.dateTo) {
+    where.scheduledAt = {};
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scheduledAtFilter: any = {};
+
+  if (filters?.dateFrom) {
+    scheduledAtFilter.gte = new Date(filters.dateFrom);
+  }
+
+  if (filters?.dateTo) {
+    const endDate = new Date(filters.dateTo);
+    endDate.setHours(23, 59, 59, 999);
+    scheduledAtFilter.lte = endDate;
+  }
+
+  if (Object.keys(scheduledAtFilter).length > 0) {
+    where.scheduledAt = scheduledAtFilter;
+  }
+
   return prisma.visit.findMany({
+    where,
     orderBy: {
       scheduledAt: "desc",
     },
@@ -55,3 +106,19 @@ export async function getTechniciansForVisitSelect() {
     },
   });
 }
+
+export async function getCustomersForVisitFilter() {
+  return prisma.customer.findMany({
+    where: {
+      isActive: true,
+    },
+    orderBy: {
+      legalName: "asc",
+    },
+    select: {
+      id: true,
+      legalName: true,
+      tradeName: true,
+    },
+  });
+}   

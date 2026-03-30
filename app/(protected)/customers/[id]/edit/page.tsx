@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCustomerById } from "@/server/queries/customer-queries";
 import { CustomerForm } from "@/components/ui/forms/customer-form";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
 
 type EditCustomerPageProps = {
   params: Promise<{ id: string }>;
@@ -15,6 +16,8 @@ export default async function EditCustomerPage({
   if (!customer) {
     notFound();
   }
+
+  await requireMasterDataAccess();
 
   return (
     <div className="space-y-6">

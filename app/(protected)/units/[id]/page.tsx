@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getUnitById } from "@/server/queries/unit-queries";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 type UnitDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -15,6 +17,8 @@ const visitStatusMap: Record<string, string> = {
 };
 
 export default async function UnitDetailPage({ params }: UnitDetailPageProps) {
+  await requireMasterDataAccess();
+  
   const { id } = await params;
   const unit = await getUnitById(id);
 

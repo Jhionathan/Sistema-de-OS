@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCustomerById } from "@/server/queries/customer-queries";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
 
 type CustomerDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -15,6 +16,8 @@ export default async function CustomerDetailPage({
   if (!customer) {
     notFound();
   }
+  
+  await requireMasterDataAccess();
 
   return (
     <div className="space-y-6">

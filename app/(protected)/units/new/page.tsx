@@ -1,7 +1,11 @@
 import { UnitForm } from "@/components/ui/forms/unit-form";
 import { getCustomersForSelect } from "@/server/queries/unit-queries";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 export default async function NewUnitPage() {
+  await requireMasterDataAccess();
+  
   const customers = await getCustomersForSelect();
 
   return (

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { getCustomers } from "@/server/queries/customer-queries";
 import { CustomersTable } from "@/components/ui/tables/customers-table";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
 
 export default async function CustomersPage() {
+  await requireMasterDataAccess();
   const customers = await getCustomers();
 
   return (

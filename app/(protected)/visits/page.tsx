@@ -1,9 +1,31 @@
 import Link from "next/link";
-import { getVisits } from "@/server/queries/visit-queries";
+import {
+  getCustomersForVisitFilter,
+  getTechniciansForVisitSelect,
+  getVisits,
+} from "@/server/queries/visit-queries";
 import { VisitsTable } from "@/components/ui/tables/visits-table";
+import { VisitsFilters } from "@/components/ui/forms/visits-filters";
 
-export default async function VisitsPage() {
-  const visits = await getVisits();
+type VisitsPageProps = {
+  searchParams: Promise<{
+    status?: string;
+    visitType?: string;
+    technicianId?: string;
+    customerId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }>;
+};
+
+export default async function VisitsPage({ searchParams }: VisitsPageProps) {
+  const filters = await searchParams;
+
+  const [visits, technicians, customers] = await Promise.all([
+    getVisits(filters),
+    getTechniciansForVisitSelect(),
+    getCustomersForVisitFilter(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -13,7 +35,7 @@ export default async function VisitsPage() {
             Visitas
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gerencie os atendimentos técnicos realizados e agendados.
+            Gerencie os atendimentos técnicos do sistema.
           </p>
         </div>
 
@@ -24,6 +46,8 @@ export default async function VisitsPage() {
           Nova visita
         </Link>
       </div>
+
+      <VisitsFilters technicians={technicians} customers={customers} />
 
       <VisitsTable visits={visits} />
     </div>

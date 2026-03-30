@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { getUnits } from "@/server/queries/unit-queries";
 import { UnitsTable } from "@/components/ui/tables/units-table";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 export default async function UnitsPage() {
+  await requireMasterDataAccess();
+  
   const units = await getUnits();
 
   return (
