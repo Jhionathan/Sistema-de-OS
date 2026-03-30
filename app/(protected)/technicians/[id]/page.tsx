@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTechnicianById } from "@/server/queries/techbician-queries";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 type TechnicianDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -20,9 +22,11 @@ export default async function TechnicianDetailPage({
   const { id } = await params;
   const technician = await getTechnicianById(id);
 
+
   if (!technician) {
     notFound();
   }
+  await requireMasterDataAccess();
 
   return (
     <div className="space-y-6">

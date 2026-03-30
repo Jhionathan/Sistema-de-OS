@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEquipmentById } from "@/server/queries/equipment-queries";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 type EquipmentDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -25,12 +27,15 @@ const visitStatusMap: Record<string, string> = {
 export default async function EquipmentDetailPage({
   params,
 }: EquipmentDetailPageProps) {
+  
+  await requireMasterDataAccess();
   const { id } = await params;
   const equipment = await getEquipmentById(id);
 
   if (!equipment) {
     notFound();
   }
+  
 
   return (
     <div className="space-y-6">

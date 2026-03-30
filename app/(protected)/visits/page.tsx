@@ -6,10 +6,12 @@ import {
 } from "@/server/queries/visit-queries";
 import { VisitsTable } from "@/components/ui/tables/visits-table";
 import { VisitsFilters } from "@/components/ui/forms/visits-filters";
+import { requireOperationalAccess } from "@/lib/auth-guards";
+
 
 type VisitsPageProps = {
   searchParams: Promise<{
-    status?: string;
+    status?: string;  
     visitType?: string;
     technicianId?: string;
     customerId?: string;
@@ -19,10 +21,11 @@ type VisitsPageProps = {
 };
 
 export default async function VisitsPage({ searchParams }: VisitsPageProps) {
+  const session = await requireOperationalAccess();
   const filters = await searchParams;
 
   const [visits, technicians, customers] = await Promise.all([
-    getVisits(filters),
+    getVisits(filters, session.user),
     getTechniciansForVisitSelect(),
     getCustomersForVisitFilter(),
   ]);

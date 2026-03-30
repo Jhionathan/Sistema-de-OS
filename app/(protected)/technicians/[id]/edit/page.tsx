@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { getTechnicianById } from "@/server/queries/techbician-queries";
 import { TechnicianForm } from "@/components/ui/forms/technican-form";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 type EditTechnicianPageProps = {
   params: Promise<{ id: string }>;
@@ -15,6 +17,8 @@ export default async function EditTechnicianPage({
   if (!technician) {
     notFound();
   }
+
+  await requireMasterDataAccess();
 
   return (
     <div className="space-y-6">

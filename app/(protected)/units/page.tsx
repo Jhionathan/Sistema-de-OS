@@ -4,6 +4,7 @@ import { UnitsTable } from "@/components/ui/tables/units-table";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
 
 
+
 export default async function UnitsPage() {
   await requireMasterDataAccess();
   

@@ -3,8 +3,12 @@ import {
   getCustomersForEquipmentSelect,
   getUnitsForEquipmentSelect,
 } from "@/server/queries/equipment-queries";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 export default async function NewEquipmentPage() {
+  await requireMasterDataAccess();
+  
   const [customers, units] = await Promise.all([
     getCustomersForEquipmentSelect(),
     getUnitsForEquipmentSelect(),

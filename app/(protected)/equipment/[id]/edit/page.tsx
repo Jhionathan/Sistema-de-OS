@@ -5,6 +5,8 @@ import {
   getEquipmentById,
   getUnitsForEquipmentSelect,
 } from "@/server/queries/equipment-queries";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 type EditEquipmentPageProps = {
   params: Promise<{ id: string }>;
@@ -14,6 +16,8 @@ export default async function EditEquipmentPage({
   params,
 }: EditEquipmentPageProps) {
   const { id } = await params;
+  
+  await requireMasterDataAccess();
 
   const [equipment, customers, units] = await Promise.all([
     getEquipmentById(id),

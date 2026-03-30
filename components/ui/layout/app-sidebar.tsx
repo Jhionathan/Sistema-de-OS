@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SidebarNavLink } from "./sidebar-nav-link";
 import { SignOutButton } from "./sign-out-button";
+import { canManageMasterData } from "@/lib/permissions";
 
 type AppSidebarProps = {
   userName: string;
@@ -39,24 +40,28 @@ export function AppSidebar({
             Dashboard
           </SidebarNavLink>
 
-          <SidebarNavLink href="/customers" icon="customers">
-            Clientes
-          </SidebarNavLink>
+          {canManageMasterData(userRole) ? (
+            <>
+              <SidebarNavLink href="/customers" icon="customers">
+                Clientes
+              </SidebarNavLink>
 
-          <SidebarNavLink href="/units" icon="units">
-            Unidades
-          </SidebarNavLink>
+              <SidebarNavLink href="/units" icon="units">
+                Unidades
+              </SidebarNavLink>
 
-          <SidebarNavLink href="/equipment" icon="equipment">
-            Equipamentos
-          </SidebarNavLink>
+              <SidebarNavLink href="/equipment" icon="equipment">
+                Equipamentos
+              </SidebarNavLink>
+
+              <SidebarNavLink href="/technicians" icon="technicians">
+                Técnicos
+              </SidebarNavLink>
+            </>
+          ) : null}
 
           <SidebarNavLink href="/visits" icon="visits">
             Visitas
-          </SidebarNavLink>
-
-          <SidebarNavLink href="/technicians" icon="technicians">
-            Técnicos
           </SidebarNavLink>
         </nav>
       </div>

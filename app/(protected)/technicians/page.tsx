@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { getTechnicians } from "@/server/queries/techbician-queries";
 import { TechniciansTable } from "@/components/ui/tables/technicians-table";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 export default async function TechniciansPage() {
+  await requireMasterDataAccess();
   const technicians = await getTechnicians();
 
   return (

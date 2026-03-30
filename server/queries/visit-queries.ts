@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, VisitStatus, VisitType } from "@prisma/client";
 
 type GetVisitsFilters = {
   status?: string;
@@ -10,32 +10,47 @@ type GetVisitsFilters = {
   dateTo?: string;
 };
 
-export async function getVisits(filters?: GetVisitsFilters) {
+type SessionUser = {
+  id?: string;
+  role?: string;
+};
+
+export async function getVisits(
+  filters?: GetVisitsFilters,
+  user?: SessionUser
+) {
   const where: Prisma.VisitWhereInput = {};
 
+  if (user?.role === "TECHNICIAN") {
+    const technician = await prisma.technician.findFirst({
+      where: {
+        userId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    where.technicianId = technician?.id ?? "__no_match__";
+  }
+
   if (filters?.status) {
-    where.status = filters.status as Prisma.EnumVisitStatusFilter["equals"];
+    where.status = filters.status as VisitStatus;
   }
 
   if (filters?.visitType) {
-    where.visitType =
-      filters.visitType as Prisma.EnumVisitTypeFilter["equals"];
+    where.visitType = filters.visitType as VisitType;
   }
 
-  if (filters?.technicianId) {
+  if (filters?.technicianId && user?.role !== "TECHNICIAN") {
     where.technicianId = filters.technicianId;
   }
 
-  if (filters?.customerId) {
+  if (filters?.customerId && user?.role !== "TECHNICIAN") {
     where.customerId = filters.customerId;
   }
 
-  if (filters?.dateFrom || filters?.dateTo) {
-    where.scheduledAt = {};
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const scheduledAtFilter: any = {};
+  const scheduledAtFilter: Prisma.DateTimeFilter = {};
 
   if (filters?.dateFrom) {
     scheduledAtFilter.gte = new Date(filters.dateFrom);
@@ -121,4 +136,4 @@ export async function getCustomersForVisitFilter() {
       tradeName: true,
     },
   });
-}   
+}

@@ -1,6 +1,10 @@
 import { TechnicianForm } from "@/components/ui/forms/technican-form";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
 
-export default function NewTechnicianPage() {
+
+export default async function NewTechnicianPage() {
+  await requireMasterDataAccess();  
+  
   return (
     <div className="space-y-6">
       <div>

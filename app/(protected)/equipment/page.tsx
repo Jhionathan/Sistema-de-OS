@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { getEquipment } from "@/server/queries/equipment-queries";
 import { EquipmentTable } from "@/components/ui/tables/equipament-table";
+import { requireMasterDataAccess } from "@/lib/auth-guards";
+
 
 export default async function EquipmentPage() {
+  await requireMasterDataAccess();
+  
   const equipment = await getEquipment();
 
   return (
