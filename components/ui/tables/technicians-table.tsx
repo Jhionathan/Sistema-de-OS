@@ -1,65 +1,48 @@
 "use client";
 
 import Link from "next/link";
+import { useTransition } from "react";
+import { toggleTechnicianStatus } from "@/server/actions/technician-action";
 
-type EquipmentRow = {
+type TechnicianRow = {
   id: string;
-  equipmentType: string;
-  brand: string | null;
-  model: string | null;
-  assetTag: string | null;
-  serialNumber: string | null;
-  status: string;
-  maintenanceFrequencyDays: number | null;
-  customer: {
-    legalName: string;
-    tradeName: string | null;
-  };
-  unit: {
-    name: string;
-  };
+  name: string;
+  email: string | null;
+  phone: string | null;
+  isActive: boolean;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  } | null;
   visits: {
     id: string;
   }[];
 };
 
-type EquipmentTableProps = {
-  equipment: EquipmentRow[];
+type TechniciansTableProps = {
+  technicians: TechnicianRow[];
 };
 
-const statusMap: Record<string, string> = {
-  ACTIVE: "Ativo",
-  IN_MAINTENANCE: "Em manutenção",
-  REMOVED: "Retirado",
-  REPLACED: "Substituído",
-  INACTIVE: "Inativo",
-};
+export function TechniciansTable({ technicians }: TechniciansTableProps) {
+  const [isPending, startTransition] = useTransition();
 
-const statusClassMap: Record<string, string> = {
-  ACTIVE: "bg-green-100 text-green-700",
-  IN_MAINTENANCE: "bg-amber-100 text-amber-700",
-  REMOVED: "bg-slate-200 text-slate-700",
-  REPLACED: "bg-blue-100 text-blue-700",
-  INACTIVE: "bg-slate-200 text-slate-700",
-};
-
-export function EquipmentTable({ equipment }: EquipmentTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
       <table className="min-w-full divide-y divide-slate-200">
         <thead className="bg-slate-50">
           <tr>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Equipamento
+              Técnico
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Cliente / Unidade
+              Contato
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Identificação
+              Usuário vinculado
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Frequência
+              Visitas
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Status
@@ -71,67 +54,90 @@ export function EquipmentTable({ equipment }: EquipmentTableProps) {
         </thead>
 
         <tbody className="divide-y divide-slate-100">
-          {equipment.map((item) => (
-            <tr key={item.id}>
+          {technicians.map((technician) => (
+            <tr key={technician.id}>
               <td className="px-4 py-4">
                 <div className="font-medium text-slate-900">
-                  {item.equipmentType}
-                </div>
-                <div className="text-sm text-slate-500">
-                  {[item.brand, item.model].filter(Boolean).join(" • ") || "-"}
+                  {technician.name}
                 </div>
               </td>
 
               <td className="px-4 py-4 text-sm text-slate-600">
-                <div>{item.customer.tradeName || item.customer.legalName}</div>
-                <div>{item.unit.name}</div>
+                <div>{technician.email || "-"}</div>
+                <div>{technician.phone || ""}</div>
               </td>
 
               <td className="px-4 py-4 text-sm text-slate-600">
-                <div>Tag: {item.assetTag || "-"}</div>
-                <div>S/N: {item.serialNumber || "-"}</div>
+                {technician.user ? (
+                  <div>
+                    <div>{technician.user.email}</div>
+                    <div className="text-xs text-slate-500">
+                      {technician.user.role}
+                    </div>
+                  </div>
+                ) : (
+                  "-"
+                )}
               </td>
 
               <td className="px-4 py-4 text-sm text-slate-600">
-                {item.maintenanceFrequencyDays
-                  ? `${item.maintenanceFrequencyDays} dias`
-                  : "-"}
+                {technician.visits.length}
               </td>
 
               <td className="px-4 py-4">
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                    statusClassMap[item.status] ?? "bg-slate-100 text-slate-700"
+                    technician.isActive
+                      ? "bg-green-100 text-green-700"
+                      : "bg-slate-200 text-slate-700"
                   }`}
                 >
-                  {statusMap[item.status] ?? item.status}
+                  {technician.isActive ? "Ativo" : "Inativo"}
                 </span>
               </td>
 
               <td className="px-4 py-4 text-right">
                 <div className="flex justify-end gap-2">
                   <Link
-                    href={`/equipment/${item.id}`}
+                    href={`/technicians/${technician.id}`}
                     className="rounded-lg border px-3 py-1.5 text-sm text-slate-700"
                   >
                     Ver
                   </Link>
 
                   <Link
-                    href={`/equipment/${item.id}/edit`}
+                    href={`/technicians/${technician.id}/edit`}
                     className="rounded-lg border px-3 py-1.5 text-sm text-slate-700"
                   >
                     Editar
                   </Link>
+
+                  <button
+                    disabled={isPending}
+                    onClick={() =>
+                      startTransition(async () => {
+                        await toggleTechnicianStatus(
+                          technician.id,
+                          !technician.isActive
+                        );
+                      })
+                    }
+                    className="rounded-lg border px-3 py-1.5 text-sm text-slate-700 disabled:opacity-60"
+                  >
+                    {technician.isActive ? "Inativar" : "Ativar"}
+                  </button>
                 </div>
               </td>
             </tr>
           ))}
 
-          {equipment.length === 0 ? (
+          {technicians.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
-                Nenhum equipamento cadastrado.
+              <td
+                colSpan={6}
+                className="px-4 py-10 text-center text-sm text-slate-500"
+              >
+                Nenhum técnico cadastrado.
               </td>
             </tr>
           ) : null}
