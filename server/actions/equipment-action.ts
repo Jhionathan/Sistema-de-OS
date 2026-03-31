@@ -51,7 +51,6 @@ export async function createEquipment(input: EquipmentInput) {
   });
 
   revalidatePath("/equipment");
-  redirect("/equipment");
 }
 
 export async function updateEquipment(id: string, input: EquipmentInput) {
@@ -82,5 +81,4 @@ export async function updateEquipment(id: string, input: EquipmentInput) {
 
   revalidatePath("/equipment");
   revalidatePath(`/equipment/${id}`);
-  redirect("/equipment");
 }

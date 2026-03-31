@@ -39,7 +39,6 @@ export async function createUnit(input: UnitInput) {
   });
 
   revalidatePath("/units");
-  redirect("/units");
 }
 
 export async function updateUnit(id: string, input: UnitInput) {
@@ -72,7 +71,6 @@ export async function updateUnit(id: string, input: UnitInput) {
 
   revalidatePath("/units");
   revalidatePath(`/units/${id}`);
-  redirect("/units");
 }
 
 export async function toggleUnitStatus(id: string, isActive: boolean) {

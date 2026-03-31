@@ -1,9 +1,17 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { Equipment, Technician, Visit, Customer, CustomerUnit } from "@prisma/client";
 import { createVisit, updateVisit } from "@/server/actions/visit-action";
+import { visitSchema, type VisitInput } from "@/lib/validations/visit";
+import { toast } from "sonner";
+import { FormInput } from "./form-input";
+import { FormSelect } from "./form-select";
+import { FormTextarea } from "./form-textarea";
+import { FormCheckbox } from "./form-checkbox";
 
 type EquipmentOption = Equipment & {
   customer: Customer;
@@ -16,131 +24,108 @@ type VisitFormProps = {
   technicians: Technician[];
 };
 
-const visitTypeOptions = [
+const VISIT_TYPE_OPTIONS = [
   { value: "PREVENTIVE", label: "Preventiva" },
   { value: "CORRECTIVE", label: "Corretiva" },
   { value: "INSTALLATION", label: "Instalação" },
   { value: "REPLACEMENT", label: "Troca" },
   { value: "REMOVAL", label: "Retirada" },
   { value: "INSPECTION", label: "Inspeção" },
-] as const;
+];
 
-const statusOptions = [
+const STATUS_OPTIONS = [
   { value: "SCHEDULED", label: "Agendada" },
   { value: "IN_PROGRESS", label: "Em andamento" },
   { value: "COMPLETED", label: "Concluída" },
   { value: "CANCELED", label: "Cancelada" },
   { value: "PENDING_RETURN", label: "Pendente retorno" },
-] as const;
+];
+
+const TECHNICIAN_OPTIONS = (technicians: Technician[]) =>
+  technicians.map((tech) => ({ value: tech.id, label: tech.name }));
+
+const EQUIPMENT_OPTIONS = (equipment: EquipmentOption[]) =>
+  equipment.map((item) => ({
+    value: item.id,
+    label: `${item.customer.tradeName || item.customer.legalName} • ${item.unit.name} • ${item.equipmentType}${
+      item.assetTag ? ` • ${item.assetTag}` : ""
+    }`,
+  }));
+
+function formatDateTimeForInput(date: Date | null | undefined): string {
+  if (!date) return "";
+  return new Date(date).toISOString().slice(0, 16);
+}
 
 export function VisitForm({ visit, equipment, technicians }: VisitFormProps) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    watch,
+  } = useForm<VisitInput>({
+    resolver: zodResolver(visitSchema),
+    defaultValues: {
+      equipmentId: visit?.equipmentId ?? "",
+      technicianId: visit?.technicianId ?? "",
+      scheduledAt: formatDateTimeForInput(visit?.scheduledAt),
+      startedAt: formatDateTimeForInput(visit?.startedAt),
+      finishedAt: formatDateTimeForInput(visit?.finishedAt),
+      visitType: visit?.visitType ?? "PREVENTIVE",
+      status: visit?.status ?? "SCHEDULED",
+      reportedIssue: visit?.reportedIssue ?? "",
+      servicePerformed: visit?.servicePerformed ?? "",
+      technicalNotes: visit?.technicalNotes ?? "",
+      requiresReturn: visit?.requiresReturn ?? false,
+      returnDueDate: formatDateTimeForInput(visit?.returnDueDate),
+    },
+  });
 
-  const [equipmentId, setEquipmentId] = useState(visit?.equipmentId ?? "");
-  const [technicianId, setTechnicianId] = useState(visit?.technicianId ?? "");
-  const [scheduledAt, setScheduledAt] = useState(
-    visit?.scheduledAt
-      ? new Date(visit.scheduledAt).toISOString().slice(0, 16)
-      : ""
-  );
-  const [startedAt, setStartedAt] = useState(
-    visit?.startedAt
-      ? new Date(visit.startedAt).toISOString().slice(0, 16)
-      : ""
-  );
-  const [finishedAt, setFinishedAt] = useState(
-    visit?.finishedAt
-      ? new Date(visit.finishedAt).toISOString().slice(0, 16)
-      : ""
-  );
-  const [visitType, setVisitType] = useState(visit?.visitType ?? "PREVENTIVE");
-  const [status, setStatus] = useState(visit?.status ?? "SCHEDULED");
-  const [reportedIssue, setReportedIssue] = useState(visit?.reportedIssue ?? "");
-  const [servicePerformed, setServicePerformed] = useState(visit?.servicePerformed ?? "");
-  const [technicalNotes, setTechnicalNotes] = useState(visit?.technicalNotes ?? "");
-  const [requiresReturn, setRequiresReturn] = useState(visit?.requiresReturn ?? false);
-  const [returnDueDate, setReturnDueDate] = useState(
-    visit?.returnDueDate
-      ? new Date(visit.returnDueDate).toISOString().slice(0, 16)
-      : ""
-  );
+  const equipmentId = watch("equipmentId");
+  const requiresReturn = watch("requiresReturn");
 
   const selectedEquipment = useMemo(() => {
     return equipment.find((item) => item.id === equipmentId);
   }, [equipment, equipmentId]);
 
-  function handleSubmit(formData: FormData) {
-    setError("");
-
-    const payload = {
-      equipmentId: String(formData.get("equipmentId") ?? ""),
-      technicianId: String(formData.get("technicianId") ?? ""),
-      scheduledAt: String(formData.get("scheduledAt") ?? ""),
-      startedAt: String(formData.get("startedAt") ?? ""),
-      finishedAt: String(formData.get("finishedAt") ?? ""),
-      visitType: String(formData.get("visitType") ?? "PREVENTIVE") as
-        | "PREVENTIVE"
-        | "CORRECTIVE"
-        | "INSTALLATION"
-        | "REPLACEMENT"
-        | "REMOVAL"
-        | "INSPECTION",
-      status: String(formData.get("status") ?? "SCHEDULED") as
-        | "SCHEDULED"
-        | "IN_PROGRESS"
-        | "COMPLETED"
-        | "CANCELED"
-        | "PENDING_RETURN",
-      reportedIssue: String(formData.get("reportedIssue") ?? ""),
-      servicePerformed: String(formData.get("servicePerformed") ?? ""),
-      technicalNotes: String(formData.get("technicalNotes") ?? ""),
-      requiresReturn: formData.get("requiresReturn") === "on",
-      returnDueDate: String(formData.get("returnDueDate") ?? ""),
-    };
-
-    startTransition(async () => {
-      try {
-        if (visit) {
-          await updateVisit(visit.id, payload);
-        } else {
-          await createVisit(payload);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao salvar visita.");
+  async function onSubmit(data: VisitInput) {
+    try {
+      if (visit) {
+        await updateVisit(visit.id, data);
+        toast.success("Visita atualizada com sucesso");
+      } else {
+        await createVisit(data);
+        toast.success("Visita criada com sucesso");
       }
-    });
+      router.push("/visits");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao salvar visita"
+      );
+    }
   }
 
   return (
-    <form action={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Equipamento
-          </label>
-          <select
-            name="equipmentId"
-            value={equipmentId}
-            onChange={(e) => setEquipmentId(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
+          <FormSelect
+            {...register("equipmentId")}
+            label="Equipamento"
+            options={EQUIPMENT_OPTIONS(equipment)}
+            placeholder="Selecione um equipamento"
+            error={errors.equipmentId?.message}
             required
-          >
-            <option value="">Selecione</option>
-            {equipment.map((item) => (
-              <option key={item.id} value={item.id}>
-                {(item.customer.tradeName || item.customer.legalName) + " • " + item.unit.name + " • " + item.equipmentType + (item.assetTag ? ` • ${item.assetTag}` : "")}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
-        {selectedEquipment ? (
-          <div className="md:col-span-2 rounded-xl border bg-slate-50 p-4 text-sm text-slate-600">
+        {selectedEquipment && (
+          <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             <div>
               <strong className="text-slate-900">Cliente:</strong>{" "}
-              {selectedEquipment.customer.tradeName || selectedEquipment.customer.legalName}
+              {selectedEquipment.customer.tradeName ||
+                selectedEquipment.customer.legalName}
             </div>
             <div>
               <strong className="text-slate-900">Unidade:</strong>{" "}
@@ -151,188 +136,112 @@ export function VisitForm({ visit, equipment, technicians }: VisitFormProps) {
               {selectedEquipment.equipmentType}
             </div>
           </div>
-        ) : null}
+        )}
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Técnico
-          </label>
-          <select
-            name="technicianId"
-            value={technicianId}
-            onChange={(e) => setTechnicianId(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          >
-            <option value="">Selecione</option>
-            {technicians.map((technician) => (
-              <option key={technician.id} value={technician.id}>
-                {technician.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          {...register("technicianId")}
+          label="Técnico"
+          options={TECHNICIAN_OPTIONS(technicians)}
+          placeholder="Selecione (opcional)"
+          error={errors.technicianId?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Tipo de visita
-          </label>
-          <select
-            name="visitType"
-            value={visitType}
-            onChange={(e) => setVisitType(e.target.value as typeof visitType)}
-            className="w-full rounded-xl border px-3 py-2"
-          >
-            {visitTypeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          {...register("visitType")}
+          label="Tipo de visita"
+          options={VISIT_TYPE_OPTIONS}
+          error={errors.visitType?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Data agendada
-          </label>
-          <input
-            name="scheduledAt"
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            required
-          />
-        </div>
+        <FormInput
+          {...register("scheduledAt")}
+          type="datetime-local"
+          label="Data agendada"
+          error={errors.scheduledAt?.message}
+          required
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Início
-          </label>
-          <input
-            name="startedAt"
-            type="datetime-local"
-            value={startedAt}
-            onChange={(e) => setStartedAt(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
+        <FormInput
+          {...register("startedAt")}
+          type="datetime-local"
+          label="Início"
+          error={errors.startedAt?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Fim
-          </label>
-          <input
-            name="finishedAt"
-            type="datetime-local"
-            value={finishedAt}
-            onChange={(e) => setFinishedAt(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
+        <FormInput
+          {...register("finishedAt")}
+          type="datetime-local"
+          label="Fim"
+          error={errors.finishedAt?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Status
-          </label>
-          <select
-            name="status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as typeof status)}
-            className="w-full rounded-xl border px-3 py-2"
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          {...register("status")}
+          label="Status"
+          options={STATUS_OPTIONS}
+          error={errors.status?.message}
+        />
 
-        <div className="flex items-center gap-3 pt-7">
-          <input
+        <div className="md:col-span-2">
+          <FormCheckbox
+            {...register("requiresReturn")}
             id="requiresReturn"
-            name="requiresReturn"
-            type="checkbox"
-            checked={requiresReturn}
-            onChange={(e) => setRequiresReturn(e.target.checked)}
-            className="h-4 w-4"
+            label="Precisa retorno"
+            error={errors.requiresReturn?.message}
           />
-          <label htmlFor="requiresReturn" className="text-sm font-medium text-slate-700">
-            Precisa retorno
-          </label>
         </div>
 
-        {requiresReturn ? (
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              Data do retorno
-            </label>
-            <input
-              name="returnDueDate"
-              type="datetime-local"
-              value={returnDueDate}
-              onChange={(e) => setReturnDueDate(e.target.value)}
-              className="w-full rounded-xl border px-3 py-2"
-            />
-          </div>
-        ) : null}
+        {requiresReturn && (
+          <FormInput
+            {...register("returnDueDate")}
+            type="datetime-local"
+            label="Data do retorno"
+            error={errors.returnDueDate?.message}
+          />
+        )}
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Problema relatado
-        </label>
-        <textarea
-          name="reportedIssue"
-          value={reportedIssue}
-          onChange={(e) => setReportedIssue(e.target.value)}
-          className="min-h-25 w-full rounded-xl border px-3 py-2"
-        />
-      </div>
+      <FormTextarea
+        {...register("reportedIssue")}
+        label="Problema relatado"
+        placeholder="Descreva o problema identificado"
+        className="min-h-24"
+        error={errors.reportedIssue?.message}
+      />
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Serviço executado
-        </label>
-        <textarea
-          name="servicePerformed"
-          value={servicePerformed}
-          onChange={(e) => setServicePerformed(e.target.value)}
-          className="min-h-25 w-full rounded-xl border px-3 py-2"
-        />
-      </div>
+      <FormTextarea
+        {...register("servicePerformed")}
+        label="Serviço executado"
+        placeholder="Descreva o serviço realizado"
+        className="min-h-24"
+        error={errors.servicePerformed?.message}
+      />
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Observações técnicas
-        </label>
-        <textarea
-          name="technicalNotes"
-          value={technicalNotes}
-          onChange={(e) => setTechnicalNotes(e.target.value)}
-          className="min-h-25 w-full rounded-xl border px-3 py-2"
-        />
-      </div>
-
-      {error ? (
-        <div className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
-          {error}
-        </div>
-      ) : null}
+      <FormTextarea
+        {...register("technicalNotes")}
+        label="Observações técnicas"
+        placeholder="Adicione observações técnicas relevantes"
+        className="min-h-24"
+        error={errors.technicalNotes?.message}
+      />
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={isPending}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          disabled={isSubmitting}
+          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 transition-colors"
         >
-          {isPending ? "Salvando..." : visit ? "Salvar alterações" : "Cadastrar visita"}
+          {isSubmitting
+            ? "Salvando..."
+            : visit
+              ? "Salvar alterações"
+              : "Cadastrar visita"}
         </button>
 
         <button
           type="button"
           onClick={() => router.push("/visits")}
-          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700"
+          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Cancelar
         </button>

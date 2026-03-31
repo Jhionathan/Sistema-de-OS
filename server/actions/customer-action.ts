@@ -34,7 +34,6 @@ export async function createCustomer(input: CustomerInput) {
   });
 
   revalidatePath("/customers");
-  redirect("/customers");
 }
 
 export async function updateCustomer(id: string, input: CustomerInput) {
@@ -63,7 +62,6 @@ export async function updateCustomer(id: string, input: CustomerInput) {
 
   revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);
-  redirect("/customers");
 }
     
 export async function toggleCustomerStatus(id: string, isActive: boolean) {

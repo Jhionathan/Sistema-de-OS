@@ -24,7 +24,7 @@ export const visitSchema = z.object({
   reportedIssue: z.string().optional().or(z.literal("")),
   servicePerformed: z.string().optional().or(z.literal("")),
   technicalNotes: z.string().optional().or(z.literal("")),
-  requiresReturn: z.boolean().default(false),
+  requiresReturn: z.boolean(),
   returnDueDate: z.string().optional().or(z.literal("")),
 });
 

@@ -80,7 +80,6 @@ export async function createVisit(input: VisitInput) {
   });
 
   revalidatePath("/visits");
-  redirect("/visits");
 }
 
 export async function updateVisit(id: string, input: VisitInput) {
@@ -163,5 +162,4 @@ export async function updateVisit(id: string, input: VisitInput) {
 
   revalidatePath("/visits");
   revalidatePath(`/visits/${id}`);
-  redirect("/visits");
 }

@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { Technician } from "@prisma/client";
 import {
   createTechnician,
   updateTechnician,
 } from "@/server/actions/technician-action";
+import { technicianSchema, type TechnicianInput } from "@/lib/validations/technician";
+import { toast } from "sonner";
+import { FormInput } from "./form-input";
+import { FormCheckbox } from "./form-checkbox";
 
 type TechnicianFormProps = {
   technician?: Technician | null;
@@ -14,112 +19,80 @@ type TechnicianFormProps = {
 
 export function TechnicianForm({ technician }: TechnicianFormProps) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<TechnicianInput>({
+    resolver: zodResolver(technicianSchema),
+    defaultValues: {
+      name: technician?.name ?? "",
+      email: technician?.email ?? "",
+      phone: technician?.phone ?? "",
+      isActive: technician?.isActive ?? true,
+    },
+  });
 
-  const [name, setName] = useState(technician?.name ?? "");
-  const [email, setEmail] = useState(technician?.email ?? "");
-  const [phone, setPhone] = useState(technician?.phone ?? "");
-  const [isActive, setIsActive] = useState(technician?.isActive ?? true);
-
-  function handleSubmit(formData: FormData) {
-    setError("");
-
-    const payload = {
-      name: String(formData.get("name") ?? ""),
-      email: String(formData.get("email") ?? ""),
-      phone: String(formData.get("phone") ?? ""),
-      isActive: formData.get("isActive") === "on",
-    };
-
-    startTransition(async () => {
-      try {
-        if (technician) {
-          await updateTechnician(technician.id, payload);
-        } else {
-          await createTechnician(payload);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao salvar técnico.");
+  async function onSubmit(data: TechnicianInput) {
+    try {
+      if (technician) {
+        await updateTechnician(technician.id, data);
+        toast.success("Técnico atualizado com sucesso");
+      } else {
+        await createTechnician(data);
+        toast.success("Técnico cadastrado com sucesso");
       }
-    });
+      router.push("/technicians");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao salvar técnico"
+      );
+    }
   }
 
   return (
-    <form action={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Nome
-          </label>
-          <input
-            name="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="Ex.: Carlos Técnico"
-            required
-          />
-        </div>
+        <FormInput
+          {...register("name")}
+          label="Nome"
+          placeholder="Ex.: Carlos Técnico"
+          required
+          error={errors.name?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            E-mail
-          </label>
-          <input
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="tecnico@empresa.com"
-          />
-        </div>
+        <FormInput
+          {...register("email")}
+          type="email"
+          label="E-mail"
+          placeholder="tecnico@empresa.com"
+          error={errors.email?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Telefone
-          </label>
-          <input
-            name="phone"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="(62) 99999-9999"
-          />
-        </div>
+        <FormInput
+          {...register("phone")}
+          label="Telefone"
+          placeholder="(62) 99999-9999"
+          error={errors.phone?.message}
+        />
 
-        <div className="flex items-center gap-3 pt-7">
-          <input
+        <div className="md:col-span-2">
+          <FormCheckbox
+            {...register("isActive")}
             id="isActive"
-            name="isActive"
-            type="checkbox"
-            checked={isActive}
-            onChange={(e) => setIsActive(e.target.checked)}
-            className="h-4 w-4"
+            label="Técnico ativo"
+            error={errors.isActive?.message}
           />
-          <label
-            htmlFor="isActive"
-            className="text-sm font-medium text-slate-700"
-          >
-            Técnico ativo
-          </label>
         </div>
       </div>
-
-      {error ? (
-        <div className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
-          {error}
-        </div>
-      ) : null}
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={isPending}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          disabled={isSubmitting}
+          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 transition-colors"
         >
-          {isPending
+          {isSubmitting
             ? "Salvando..."
             : technician
               ? "Salvar alterações"
@@ -129,7 +102,7 @@ export function TechnicianForm({ technician }: TechnicianFormProps) {
         <button
           type="button"
           onClick={() => router.push("/technicians")}
-          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700"
+          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Cancelar
         </button>

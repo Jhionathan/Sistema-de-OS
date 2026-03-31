@@ -1,12 +1,19 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { Customer, CustomerUnit, Equipment } from "@prisma/client";
 import {
   createEquipment,
   updateEquipment,
 } from "@/server/actions/equipment-action";
+import { equipmentSchema, type EquipmentInput } from "@/lib/validations/equipment";
+import { toast } from "sonner";
+import { FormInput } from "./form-input";
+import { FormSelect } from "./form-select";
+import { FormTextarea } from "./form-textarea";
 
 type EquipmentFormProps = {
   equipment?: Equipment | null;
@@ -14,13 +21,30 @@ type EquipmentFormProps = {
   units: Pick<CustomerUnit, "id" | "name" | "customerId">[];
 };
 
-const statusOptions = [
+const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Ativo" },
   { value: "IN_MAINTENANCE", label: "Em manutenção" },
   { value: "REMOVED", label: "Retirado" },
   { value: "REPLACED", label: "Substituído" },
   { value: "INACTIVE", label: "Inativo" },
-] as const;
+];
+
+const CUSTOMER_OPTIONS = (customers: Pick<Customer, "id" | "legalName" | "tradeName">[]) =>
+  customers.map((customer) => ({
+    value: customer.id,
+    label: customer.tradeName || customer.legalName,
+  }));
+
+const UNIT_OPTIONS = (units: Pick<CustomerUnit, "id" | "name" | "customerId">[]) =>
+  units.map((unit) => ({
+    value: unit.id,
+    label: unit.name,
+  }));
+
+function formatDateForInput(date: Date | null | undefined): string {
+  if (!date) return "";
+  return new Date(date).toISOString().split("T")[0];
+}
 
 export function EquipmentForm({
   equipment,
@@ -28,255 +52,143 @@ export function EquipmentForm({
   units,
 }: EquipmentFormProps) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    watch,
+  } = useForm<EquipmentInput>({
+    resolver: zodResolver(equipmentSchema),
+    defaultValues: {
+      customerId: equipment?.customerId ?? "",
+      unitId: equipment?.unitId ?? "",
+      equipmentType: equipment?.equipmentType ?? "",
+      brand: equipment?.brand ?? "",
+      model: equipment?.model ?? "",
+      assetTag: equipment?.assetTag ?? "",
+      serialNumber: equipment?.serialNumber ?? "",
+      installationDate: formatDateForInput(equipment?.installationDate),
+      maintenanceFrequencyDays: equipment?.maintenanceFrequencyDays?.toString() ?? "",
+      status: equipment?.status ?? "ACTIVE",
+      notes: equipment?.notes ?? "",
+    },
+  });
 
-  const [customerId, setCustomerId] = useState(equipment?.customerId ?? "");
-  const [unitId, setUnitId] = useState(equipment?.unitId ?? "");
-  const [equipmentType, setEquipmentType] = useState(
-    equipment?.equipmentType ?? ""
-  );
-  const [brand, setBrand] = useState(equipment?.brand ?? "");
-  const [model, setModel] = useState(equipment?.model ?? "");
-  const [assetTag, setAssetTag] = useState(equipment?.assetTag ?? "");
-  const [serialNumber, setSerialNumber] = useState(equipment?.serialNumber ?? "");
-  const [installationDate, setInstallationDate] = useState(
-    equipment?.installationDate
-      ? new Date(equipment.installationDate).toISOString().split("T")[0]
-      : ""
-  );
-  const [maintenanceFrequencyDays, setMaintenanceFrequencyDays] = useState(
-    equipment?.maintenanceFrequencyDays?.toString() ?? ""
-  );
-  const [status, setStatus] = useState(equipment?.status ?? "ACTIVE");
-  const [notes, setNotes] = useState(equipment?.notes ?? "");
+  const customerId = watch("customerId");
 
   const filteredUnits = useMemo(() => {
     return units.filter((unit) => unit.customerId === customerId);
   }, [units, customerId]);
 
-  function handleCustomerChange(value: string) {
-    setCustomerId(value);
-    setUnitId("");
-  }
-
-  function handleSubmit(formData: FormData) {
-    setError("");
-
-    const payload = {
-      customerId: String(formData.get("customerId") ?? ""),
-      unitId: String(formData.get("unitId") ?? ""),
-      equipmentType: String(formData.get("equipmentType") ?? ""),
-      brand: String(formData.get("brand") ?? ""),
-      model: String(formData.get("model") ?? ""),
-      assetTag: String(formData.get("assetTag") ?? ""),
-      serialNumber: String(formData.get("serialNumber") ?? ""),
-      installationDate: String(formData.get("installationDate") ?? ""),
-      maintenanceFrequencyDays: String(
-        formData.get("maintenanceFrequencyDays") ?? ""
-      ),
-      status: String(formData.get("status") ?? "ACTIVE") as
-        | "ACTIVE"
-        | "IN_MAINTENANCE"
-        | "REMOVED"
-        | "REPLACED"
-        | "INACTIVE",
-      notes: String(formData.get("notes") ?? ""),
-    };
-
-    startTransition(async () => {
-      try {
-        if (equipment) {
-          await updateEquipment(equipment.id, payload);
-        } else {
-          await createEquipment(payload);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Erro ao salvar equipamento."
-        );
+  async function onSubmit(data: EquipmentInput) {
+    try {
+      if (equipment) {
+        await updateEquipment(equipment.id, data);
+        toast.success("Equipamento atualizado com sucesso");
+      } else {
+        await createEquipment(data);
+        toast.success("Equipamento cadastrado com sucesso");
       }
-    });
+      router.push("/equipment");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao salvar equipamento"
+      );
+    }
   }
 
   return (
-    <form action={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Cliente
-          </label>
-          <select
-            name="customerId"
-            value={customerId}
-            onChange={(e) => handleCustomerChange(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            required
-          >
-            <option value="">Selecione</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.tradeName || customer.legalName}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          {...register("customerId")}
+          label="Cliente"
+          options={CUSTOMER_OPTIONS(customers)}
+          placeholder="Selecione um cliente"
+          required
+          error={errors.customerId?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Unidade
-          </label>
-          <select
-            name="unitId"
-            value={unitId}
-            onChange={(e) => setUnitId(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            required
-          >
-            <option value="">Selecione</option>
-            {filteredUnits.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          {...register("unitId")}
+          label="Unidade"
+          options={UNIT_OPTIONS(filteredUnits)}
+          placeholder="Selecione uma unidade"
+          required
+          error={errors.unitId?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Tipo de equipamento
-          </label>
-          <input
-            name="equipmentType"
-            value={equipmentType}
-            onChange={(e) => setEquipmentType(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="Ex.: Dispenser de Sabonete"
-            required
-          />
-        </div>
+        <FormInput
+          {...register("equipmentType")}
+          label="Tipo de equipamento"
+          placeholder="Ex.: Dispenser de Sabonete"
+          required
+          error={errors.equipmentType?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Marca
-          </label>
-          <input
-            name="brand"
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="Ex.: Higitech"
-          />
-        </div>
+        <FormInput
+          {...register("brand")}
+          label="Marca"
+          placeholder="Ex.: Higitech"
+          error={errors.brand?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Modelo
-          </label>
-          <input
-            name="model"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
+        <FormInput
+          {...register("model")}
+          label="Modelo"
+          error={errors.model?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Patrimônio / Tag
-          </label>
-          <input
-            name="assetTag"
-            value={assetTag}
-            onChange={(e) => setAssetTag(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="Ex.: EQ-001"
-          />
-        </div>
+        <FormInput
+          {...register("assetTag")}
+          label="Patrimônio / Tag"
+          placeholder="Ex.: EQ-001"
+          error={errors.assetTag?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Número de série
-          </label>
-          <input
-            name="serialNumber"
-            value={serialNumber}
-            onChange={(e) => setSerialNumber(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
+        <FormInput
+          {...register("serialNumber")}
+          label="Número de série"
+          error={errors.serialNumber?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Data de instalação
-          </label>
-          <input
-            name="installationDate"
-            type="date"
-            value={installationDate}
-            onChange={(e) => setInstallationDate(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
+        <FormInput
+          {...register("installationDate")}
+          type="date"
+          label="Data de instalação"
+          error={errors.installationDate?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Frequência de manutenção (dias)
-          </label>
-          <input
-            name="maintenanceFrequencyDays"
-            type="number"
-            value={maintenanceFrequencyDays}
-            onChange={(e) => setMaintenanceFrequencyDays(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="30"
-          />
-        </div>
+        <FormInput
+          {...register("maintenanceFrequencyDays")}
+          type="number"
+          label="Frequência de manutenção (dias)"
+          placeholder="30"
+          error={errors.maintenanceFrequencyDays?.message}
+        />
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Status
-          </label>
-          <select
-            name="status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as typeof status)}
-            className="w-full rounded-xl border px-3 py-2"
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Observações
-        </label>
-        <textarea
-          name="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="min-h-30 w-full rounded-xl border px-3 py-2"
+        <FormSelect
+          {...register("status")}
+          label="Status"
+          options={STATUS_OPTIONS}
+          error={errors.status?.message}
         />
       </div>
 
-      {error ? (
-        <div className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
-          {error}
-        </div>
-      ) : null}
+      <FormTextarea
+        {...register("notes")}
+        label="Observações"
+        className="min-h-24"
+        error={errors.notes?.message}
+      />
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={isPending}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          disabled={isSubmitting}
+          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 transition-colors"
         >
-          {isPending
+          {isSubmitting
             ? "Salvando..."
             : equipment
               ? "Salvar alterações"
@@ -286,7 +198,7 @@ export function EquipmentForm({
         <button
           type="button"
           onClick={() => router.push("/equipment")}
-          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700"
+          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Cancelar
         </button>

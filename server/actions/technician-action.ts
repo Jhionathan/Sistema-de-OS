@@ -34,7 +34,6 @@ export async function createTechnician(input: TechnicianInput) {
   });
 
   revalidatePath("/technicians");
-  redirect("/technicians");
 }
 
 export async function updateTechnician(id: string, input: TechnicianInput) {
@@ -59,7 +58,6 @@ export async function updateTechnician(id: string, input: TechnicianInput) {
 
   revalidatePath("/technicians");
   revalidatePath(`/technicians/${id}`);
-  redirect("/technicians");
 }
 
 export async function toggleTechnicianStatus(id: string, isActive: boolean) {

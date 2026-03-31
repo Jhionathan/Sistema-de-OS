@@ -1,246 +1,170 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { Customer, CustomerUnit } from "@prisma/client";
 import { createUnit, updateUnit } from "@/server/actions/unit-action";
+import { unitSchema, type UnitInput } from "@/lib/validations/units";
+import { toast } from "sonner";
+import { FormInput } from "./form-input";
+import { FormSelect } from "./form-select";
+import { FormCheckbox } from "./form-checkbox";
+import { FormTextarea } from "./form-textarea";
 
 type UnitFormProps = {
   unit?: CustomerUnit | null;
   customers: Pick<Customer, "id" | "legalName" | "tradeName">[];
 };
 
+const CUSTOMER_OPTIONS = (customers: Pick<Customer, "id" | "legalName" | "tradeName">[]) =>
+  customers.map((customer) => ({
+    value: customer.id,
+    label: customer.tradeName || customer.legalName,
+  }));
+
 export function UnitForm({ unit, customers }: UnitFormProps) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<UnitInput>({
+    resolver: zodResolver(unitSchema),
+    defaultValues: {
+      customerId: unit?.customerId ?? "",
+      name: unit?.name ?? "",
+      contactName: unit?.contactName ?? "",
+      contactPhone: unit?.contactPhone ?? "",
+      street: unit?.street ?? "",
+      number: unit?.number ?? "",
+      district: unit?.district ?? "",
+      city: unit?.city ?? "",
+      state: unit?.state ?? "",
+      zipCode: unit?.zipCode ?? "",
+      notes: unit?.notes ?? "",
+      isActive: unit?.isActive ?? true,
+    },
+  });
 
-  const [customerId, setCustomerId] = useState(unit?.customerId ?? "");
-  const [name, setName] = useState(unit?.name ?? "");
-  const [contactName, setContactName] = useState(unit?.contactName ?? "");
-  const [contactPhone, setContactPhone] = useState(unit?.contactPhone ?? "");
-  const [street, setStreet] = useState(unit?.street ?? "");
-  const [number, setNumber] = useState(unit?.number ?? "");
-  const [district, setDistrict] = useState(unit?.district ?? "");
-  const [city, setCity] = useState(unit?.city ?? "");
-  const [state, setState] = useState(unit?.state ?? "");
-  const [zipCode, setZipCode] = useState(unit?.zipCode ?? "");
-  const [notes, setNotes] = useState(unit?.notes ?? "");
-  const [isActive, setIsActive] = useState(unit?.isActive ?? true);
-
-  function handleSubmit(formData: FormData) {
-    setError("");
-
-    const payload = {
-      customerId: String(formData.get("customerId") ?? ""),
-      name: String(formData.get("name") ?? ""),
-      contactName: String(formData.get("contactName") ?? ""),
-      contactPhone: String(formData.get("contactPhone") ?? ""),
-      street: String(formData.get("street") ?? ""),
-      number: String(formData.get("number") ?? ""),
-      district: String(formData.get("district") ?? ""),
-      city: String(formData.get("city") ?? ""),
-      state: String(formData.get("state") ?? ""),
-      zipCode: String(formData.get("zipCode") ?? ""),
-      notes: String(formData.get("notes") ?? ""),
-      isActive: formData.get("isActive") === "on",
-    };
-
-    startTransition(async () => {
-      try {
-        if (unit) {
-          await updateUnit(unit.id, payload);
-        } else {
-          await createUnit(payload);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao salvar unidade.");
+  async function onSubmit(data: UnitInput) {
+    try {
+      if (unit) {
+        await updateUnit(unit.id, data);
+        toast.success("Unidade atualizada com sucesso");
+      } else {
+        await createUnit(data);
+        toast.success("Unidade cadastrada com sucesso");
       }
-    });
+      router.push("/units");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao salvar unidade"
+      );
+    }
   }
 
   return (
-    <form action={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Cliente
-          </label>
-          <select
-            name="customerId"
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            required
-          >
-            <option value="">Selecione</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.tradeName || customer.legalName}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Nome da unidade
-          </label>
-          <input
-            name="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="Ex.: Unidade Centro"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Responsável
-          </label>
-          <input
-            name="contactName"
-            value={contactName}
-            onChange={(e) => setContactName(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="Nome do responsável"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Telefone do responsável
-          </label>
-          <input
-            name="contactPhone"
-            value={contactPhone}
-            onChange={(e) => setContactPhone(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="(62) 99999-9999"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Rua
-          </label>
-          <input
-            name="street"
-            value={street}
-            onChange={(e) => setStreet(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Número
-          </label>
-          <input
-            name="number"
-            value={number}
-            onChange={(e) => setNumber(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Bairro
-          </label>
-          <input
-            name="district"
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            CEP
-          </label>
-          <input
-            name="zipCode"
-            value={zipCode}
-            onChange={(e) => setZipCode(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Cidade
-          </label>
-          <input
-            name="city"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Estado
-          </label>
-          <input
-            name="state"
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-            className="w-full rounded-xl border px-3 py-2"
-            placeholder="GO"
-          />
-        </div>
-
-        <div className="flex items-center gap-3 pt-7">
-          <input
-            id="isActive"
-            name="isActive"
-            type="checkbox"
-            checked={isActive}
-            onChange={(e) => setIsActive(e.target.checked)}
-            className="h-4 w-4"
-          />
-          <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
-            Unidade ativa
-          </label>
-        </div>
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
-          Observações
-        </label>
-        <textarea
-          name="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="min-h-30 w-full rounded-xl border px-3 py-2"
+        <FormSelect
+          {...register("customerId")}
+          label="Cliente"
+          options={CUSTOMER_OPTIONS(customers)}
+          placeholder="Selecione um cliente"
+          required
+          error={errors.customerId?.message}
         />
+
+        <FormInput
+          {...register("name")}
+          label="Nome da unidade"
+          placeholder="Ex.: Unidade Centro"
+          required
+          error={errors.name?.message}
+        />
+
+        <FormInput
+          {...register("contactName")}
+          label="Responsável"
+          placeholder="Nome do responsável"
+          error={errors.contactName?.message}
+        />
+
+        <FormInput
+          {...register("contactPhone")}
+          label="Telefone do responsável"
+          placeholder="(62) 99999-9999"
+          error={errors.contactPhone?.message}
+        />
+
+        <FormInput
+          {...register("street")}
+          label="Rua"
+          error={errors.street?.message}
+        />
+
+        <FormInput
+          {...register("number")}
+          label="Número"
+          error={errors.number?.message}
+        />
+
+        <FormInput
+          {...register("district")}
+          label="Bairro"
+          error={errors.district?.message}
+        />
+
+        <FormInput
+          {...register("zipCode")}
+          label="CEP"
+          error={errors.zipCode?.message}
+        />
+
+        <FormInput
+          {...register("city")}
+          label="Cidade"
+          error={errors.city?.message}
+        />
+
+        <FormInput
+          {...register("state")}
+          label="Estado"
+          placeholder="GO"
+          error={errors.state?.message}
+        />
+
+        <div className="md:col-span-2">
+          <FormCheckbox
+            {...register("isActive")}
+            id="isActive"
+            label="Unidade ativa"
+            error={errors.isActive?.message}
+          />
+        </div>
       </div>
 
-      {error ? (
-        <div className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
-          {error}
-        </div>
-      ) : null}
+      <FormTextarea
+        {...register("notes")}
+        label="Observações"
+        className="min-h-24"
+        error={errors.notes?.message}
+      />
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={isPending}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          disabled={isSubmitting}
+          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 transition-colors"
         >
-          {isPending ? "Salvando..." : unit ? "Salvar alterações" : "Cadastrar unidade"}
+          {isSubmitting ? "Salvando..." : unit ? "Salvar alterações" : "Cadastrar unidade"}
         </button>
 
         <button
           type="button"
           onClick={() => router.push("/units")}
-          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700"
+          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Cancelar
         </button>
