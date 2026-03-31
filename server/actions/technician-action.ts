@@ -1,5 +1,5 @@
 "use server";
-
+import { requireMasterDataPermission } from "@/lib/action-guards";
 import { prisma } from "@/lib/prisma";
 import {
   technicianSchema,
@@ -15,6 +15,7 @@ function normalizeOptional(value?: string) {
 }
 
 export async function createTechnician(input: TechnicianInput) {
+  await requireMasterDataPermission();
   const parsed = technicianSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -37,6 +38,7 @@ export async function createTechnician(input: TechnicianInput) {
 }
 
 export async function updateTechnician(id: string, input: TechnicianInput) {
+  await requireMasterDataPermission();
   const parsed = technicianSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -61,6 +63,7 @@ export async function updateTechnician(id: string, input: TechnicianInput) {
 }
 
 export async function toggleTechnicianStatus(id: string, isActive: boolean) {
+  await requireMasterDataPermission();
   await prisma.technician.update({
     where: { id },
     data: {

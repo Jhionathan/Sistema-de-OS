@@ -1,5 +1,5 @@
 "use server";
-
+import { requireMasterDataPermission } from "@/lib/action-guards";
 import { prisma } from "@/lib/prisma";
 import { unitSchema, type UnitInput } from "@/lib/validations/units";
 import { revalidatePath } from "next/cache";
@@ -12,6 +12,7 @@ function normalizeOptional(value?: string) {
 }
 
 export async function createUnit(input: UnitInput) {
+  await requireMasterDataPermission();
   const parsed = unitSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -42,6 +43,7 @@ export async function createUnit(input: UnitInput) {
 }
 
 export async function updateUnit(id: string, input: UnitInput) {
+  await requireMasterDataPermission();
   const parsed = unitSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -74,6 +76,7 @@ export async function updateUnit(id: string, input: UnitInput) {
 }
 
 export async function toggleUnitStatus(id: string, isActive: boolean) {
+  await requireMasterDataPermission();
   await prisma.customerUnit.update({
     where: { id },
     data: {

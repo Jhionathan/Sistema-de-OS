@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getDashboardStats() {
+type DashboardUser = {
+  id?: string;
+  role?: string;
+};
+
+export async function getDashboardStats(user?: DashboardUser) {
   const now = new Date();
 
   const startOfToday = new Date(now);
@@ -12,6 +17,29 @@ export async function getDashboardStats() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   endOfMonth.setHours(23, 59, 59, 999);
+
+  const isTechnician = user?.role === "TECHNICIAN";
+
+  let technicianId: string | null = null;
+
+  if (isTechnician && user?.id) {
+    const technician = await prisma.technician.findFirst({
+      where: {
+        userId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    technicianId = technician?.id ?? null;
+  }
+
+  const visitWhereForTechnician = technicianId
+    ? { technicianId }
+    : isTechnician
+      ? { technicianId: "__no_match__" }
+      : {};
 
   const [
     totalCustomers,
@@ -26,16 +54,21 @@ export async function getDashboardStats() {
     nextVisits,
     visitsByStatus,
   ] = await Promise.all([
-    prisma.customer.count({
-      where: { isActive: true },
-    }),
+    isTechnician
+      ? Promise.resolve(0)
+      : prisma.customer.count({
+          where: { isActive: true },
+        }),
 
-    prisma.equipment.count({
-      where: { status: "ACTIVE" },
-    }),
+    isTechnician
+      ? Promise.resolve(0)
+      : prisma.equipment.count({
+          where: { status: "ACTIVE" },
+        }),
 
     prisma.visit.count({
       where: {
+        ...visitWhereForTechnician,
         scheduledAt: {
           gte: startOfToday,
           lte: endOfToday,
@@ -45,12 +78,14 @@ export async function getDashboardStats() {
 
     prisma.visit.count({
       where: {
+        ...visitWhereForTechnician,
         status: "PENDING_RETURN",
       },
     }),
 
     prisma.visit.count({
       where: {
+        ...visitWhereForTechnician,
         scheduledAt: {
           lt: now,
         },
@@ -60,14 +95,17 @@ export async function getDashboardStats() {
       },
     }),
 
-    prisma.equipment.count({
-      where: {
-        status: "IN_MAINTENANCE",
-      },
-    }),
+    isTechnician
+      ? Promise.resolve(0)
+      : prisma.equipment.count({
+          where: {
+            status: "IN_MAINTENANCE",
+          },
+        }),
 
     prisma.visit.count({
       where: {
+        ...visitWhereForTechnician,
         status: "COMPLETED",
         scheduledAt: {
           gte: startOfMonth,
@@ -76,13 +114,18 @@ export async function getDashboardStats() {
       },
     }),
 
-    prisma.technician.count({
-      where: {
-        isActive: true,
-      },
-    }),
+    isTechnician
+      ? Promise.resolve(0)
+      : prisma.technician.count({
+          where: {
+            isActive: true,
+          },
+        }),
 
     prisma.visit.findMany({
+      where: {
+        ...visitWhereForTechnician,
+      },
       orderBy: {
         scheduledAt: "desc",
       },
@@ -97,6 +140,7 @@ export async function getDashboardStats() {
 
     prisma.visit.findMany({
       where: {
+        ...visitWhereForTechnician,
         scheduledAt: {
           gte: now,
         },
@@ -118,6 +162,9 @@ export async function getDashboardStats() {
 
     prisma.visit.groupBy({
       by: ["status"],
+      where: {
+        ...visitWhereForTechnician,
+      },
       _count: {
         status: true,
       },
@@ -137,6 +184,7 @@ export async function getDashboardStats() {
   }
 
   return {
+    isTechnician,
     totalCustomers,
     totalActiveEquipment,
     visitsToday,

@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { visitSchema, type VisitInput } from "@/lib/validations/visit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import {
+  requireTechnicianOwnershipOrPrivilegedAccess,
+  requireVisitPermission,
+} from "@/lib/action-guards";
+
 
 function normalizeOptional(value?: string) {
   if (!value) return null;
@@ -12,17 +16,13 @@ function normalizeOptional(value?: string) {
   return trimmed === "" ? null : trimmed;
 }
 
-function normalizeDate(value?: string) {
+function normalizeDateTime(value?: string) {
   if (!value || value.trim() === "") return null;
   return new Date(value);
 }
 
 export async function createVisit(input: VisitInput) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Usuário não autenticado.");
-  }
+  const session = await requireVisitPermission();
 
   const parsed = visitSchema.safeParse(input);
 
@@ -34,14 +34,29 @@ export async function createVisit(input: VisitInput) {
 
   const equipment = await prisma.equipment.findUnique({
     where: { id: data.equipmentId },
-    include: {
-      customer: true,
-      unit: true,
-    },
   });
 
   if (!equipment) {
     throw new Error("Equipamento não encontrado.");
+  }
+
+  if (session.user.role === "TECHNICIAN") {
+    const technician = await prisma.technician.findFirst({
+      where: {
+        userId: session.user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!technician) {
+      throw new Error("Técnico vinculado não encontrado.");
+    }
+
+    if (data.technicianId && data.technicianId !== technician.id) {
+      throw new Error("Você só pode criar visitas para si mesmo.");
+    }
   }
 
   await prisma.visit.create({
@@ -49,17 +64,17 @@ export async function createVisit(input: VisitInput) {
       equipmentId: equipment.id,
       customerId: equipment.customerId,
       unitId: equipment.unitId,
-      technicianId: data.technicianId ? data.technicianId : null,
+      technicianId: data.technicianId || null,
       scheduledAt: new Date(data.scheduledAt),
-      startedAt: normalizeDate(data.startedAt),
-      finishedAt: normalizeDate(data.finishedAt),
+      startedAt: normalizeDateTime(data.startedAt),
+      finishedAt: normalizeDateTime(data.finishedAt),
       visitType: data.visitType,
       status: data.status,
       reportedIssue: normalizeOptional(data.reportedIssue),
       servicePerformed: normalizeOptional(data.servicePerformed),
       technicalNotes: normalizeOptional(data.technicalNotes),
       requiresReturn: data.requiresReturn,
-      returnDueDate: normalizeDate(data.returnDueDate),
+      returnDueDate: normalizeDateTime(data.returnDueDate),
       createdByUserId: session.user.id,
     },
   });
@@ -69,6 +84,8 @@ export async function createVisit(input: VisitInput) {
 }
 
 export async function updateVisit(id: string, input: VisitInput) {
+  const session = await requireVisitPermission();
+
   const parsed = visitSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -76,6 +93,26 @@ export async function updateVisit(id: string, input: VisitInput) {
   }
 
   const data = parsed.data;
+
+  const existingVisit = await prisma.visit.findUnique({
+    where: { id },
+    include: {
+      technician: {
+        select: {
+          userId: true,
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!existingVisit) {
+    throw new Error("Visita não encontrada.");
+  }
+
+  await requireTechnicianOwnershipOrPrivilegedAccess(
+    existingVisit.technician?.userId
+  );
 
   const equipment = await prisma.equipment.findUnique({
     where: { id: data.equipmentId },
@@ -85,23 +122,42 @@ export async function updateVisit(id: string, input: VisitInput) {
     throw new Error("Equipamento não encontrado.");
   }
 
+  if (session.user.role === "TECHNICIAN") {
+    const technician = await prisma.technician.findFirst({
+      where: {
+        userId: session.user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!technician) {
+      throw new Error("Técnico vinculado não encontrado.");
+    }
+
+    if (data.technicianId && data.technicianId !== technician.id) {
+      throw new Error("Você só pode manter visitas atribuídas a si mesmo.");
+    }
+  }
+
   await prisma.visit.update({
     where: { id },
     data: {
       equipmentId: equipment.id,
       customerId: equipment.customerId,
       unitId: equipment.unitId,
-      technicianId: data.technicianId ? data.technicianId : null,
+      technicianId: data.technicianId || null,
       scheduledAt: new Date(data.scheduledAt),
-      startedAt: normalizeDate(data.startedAt),
-      finishedAt: normalizeDate(data.finishedAt),
+      startedAt: normalizeDateTime(data.startedAt),
+      finishedAt: normalizeDateTime(data.finishedAt),
       visitType: data.visitType,
       status: data.status,
       reportedIssue: normalizeOptional(data.reportedIssue),
       servicePerformed: normalizeOptional(data.servicePerformed),
       technicalNotes: normalizeOptional(data.technicalNotes),
       requiresReturn: data.requiresReturn,
-      returnDueDate: normalizeDate(data.returnDueDate),
+      returnDueDate: normalizeDateTime(data.returnDueDate),
     },
   });
 

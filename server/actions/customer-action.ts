@@ -1,5 +1,5 @@
 "use server";
-
+import { requireMasterDataPermission } from "@/lib/action-guards";
 import { prisma } from "@/lib/prisma";
 import { customerSchema, type CustomerInput } from "@/lib/validations/customer";
 import { revalidatePath } from "next/cache";
@@ -12,6 +12,7 @@ function normalizeOptional(value?: string) {
 }
 
 export async function createCustomer(input: CustomerInput) {
+  await requireMasterDataPermission();
   const parsed = customerSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -37,7 +38,9 @@ export async function createCustomer(input: CustomerInput) {
 }
 
 export async function updateCustomer(id: string, input: CustomerInput) {
+  await requireMasterDataPermission();
   const parsed = customerSchema.safeParse(input);
+
 
   if (!parsed.success) {
     throw new Error("Dados inválidos.");
@@ -62,8 +65,9 @@ export async function updateCustomer(id: string, input: CustomerInput) {
   revalidatePath(`/customers/${id}`);
   redirect("/customers");
 }
-
+    
 export async function toggleCustomerStatus(id: string, isActive: boolean) {
+  await requireMasterDataPermission();
   await prisma.customer.update({
     where: { id },
     data: {
