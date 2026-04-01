@@ -8,7 +8,7 @@ import bcrypt from "bcryptjs";
 
 function getPermissionError(currentUserRole: string, targetRole: string) {
   if (currentUserRole === "MANAGER" && (targetRole === "ADMIN" || targetRole === "MANAGER")) {
-    return "Gestores só podem criar ou conceder privilégios de Técnico.";
+    return "Gestores só podem criar ou conceder privilégios de Técnico ou Cliente.";
   }
   return null;
 }
@@ -42,9 +42,12 @@ export async function createUser(input: CreateUserInput) {
     data: {
       name: data.name,
       email: data.email,
-      role: data.role,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      role: data.role as any,
       passwordHash,
       isActive: data.isActive,
+      customerId: data.role === "CUSTOMER" ? data.customerId : null,
+      unitId: data.role === "CUSTOMER" ? data.unitId : null,
     },
   });
 
@@ -106,6 +109,8 @@ export async function updateUser(id: string, input: UpdateUserInput) {
     email: data.email,
     role: data.role,
     isActive: data.isActive,
+    customerId: data.role === "CUSTOMER" ? data.customerId : null,
+    unitId: data.role === "CUSTOMER" ? data.unitId : null,
   };
 
   if (data.password && data.password.trim() !== "") {

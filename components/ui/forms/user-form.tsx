@@ -9,20 +9,23 @@ import { toast } from "sonner";
 import { FormInput } from "./form-input";
 import { FormSelect } from "./form-select";
 import { FormCheckbox } from "./form-checkbox";
-import { ShieldCheck, Mail, Lock } from "lucide-react";
+import { ShieldCheck, Building2 } from "lucide-react";
 
 type UserFormProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  user?: any; // Simplified for UI
+  user?: any;
+  customers: { id: string; legalName: string; tradeName: string | null }[];
+  units: { id: string; name: string; customerId: string }[];
 };
 
 const ROLE_OPTIONS = [
   { value: "ADMIN", label: "Administrador" },
   { value: "MANAGER", label: "Gestor" },
   { value: "TECHNICIAN", label: "Técnico" },
+  { value: "CUSTOMER", label: "Cliente" },
 ];
 
-export function UserForm({ user }: UserFormProps) {
+export function UserForm({ user, customers, units }: UserFormProps) {
   const router = useRouter();
   
   const isEditing = !!user;
@@ -31,6 +34,7 @@ export function UserForm({ user }: UserFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CreateUserInput | UpdateUserInput>({
     resolver: zodResolver(Schema) as any,
@@ -40,8 +44,13 @@ export function UserForm({ user }: UserFormProps) {
       role: user?.role ?? "TECHNICIAN",
       password: "",
       isActive: user?.isActive ?? true,
+      customerId: user?.customerId ?? "",
+      unitId: user?.unitId ?? "",
     } as any,
   });
+
+  const selectedRole = watch("role");
+  const selectedCustomerId = watch("customerId");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function onSubmit(data: any) {
@@ -106,6 +115,45 @@ export function UserForm({ user }: UserFormProps) {
             </div>
           </div>
         </div>
+
+        {selectedRole === "CUSTOMER" && (
+          <div className="space-y-4 md:col-span-2 border-t border-border pt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-2 mb-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Vincular Empresa</h3>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormSelect
+                {...register("customerId")}
+                label="Cliente / Empresa"
+                options={[
+                  { value: "", label: "Selecione uma empresa..." },
+                  ...customers.map((c) => ({
+                    value: c.id,
+                    label: c.tradeName || c.legalName,
+                  })),
+                ]}
+                error={errors.customerId?.message as string | undefined}
+              />
+
+              <FormSelect
+                {...register("unitId")}
+                label="Unidade (Opcional)"
+                options={[
+                  { value: "", label: "Todas as unidades" },
+                  ...units
+                    .filter((u) => u.customerId === selectedCustomerId)
+                    .map((u) => ({
+                      value: u.id,
+                      label: u.name,
+                    })),
+                ]}
+                error={errors.unitId?.message as string | undefined}
+                disabled={!selectedCustomerId}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="md:col-span-2 rounded-xl border border-border bg-card p-4">
           <FormCheckbox

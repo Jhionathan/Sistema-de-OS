@@ -1,8 +1,14 @@
 import { UserForm } from "@/components/ui/forms/user-form";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
+import { getCustomersForEquipmentSelect, getUnitsForEquipmentSelect } from "@/server/queries/equipment-queries";
 
 export default async function NewUserPage() {
   await requireMasterDataAccess();
+
+  const [customers, units] = await Promise.all([
+    getCustomersForEquipmentSelect(),
+    getUnitsForEquipmentSelect(),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -16,7 +22,7 @@ export default async function NewUserPage() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <UserForm />
+        <UserForm customers={customers} units={units} />
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ export const unitSchema = z.object({
   state: z.string().optional().or(z.literal("")),
   zipCode: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean(),
 });
 
 export type UnitInput = z.infer<typeof unitSchema>;

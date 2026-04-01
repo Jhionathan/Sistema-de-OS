@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShieldAlert, Settings, Wrench } from "lucide-react";
+import { ShieldAlert, Settings, Wrench, Building2 } from "lucide-react";
 
 type UserRow = {
   id: string;
@@ -10,7 +10,8 @@ type UserRow = {
   role: string;
   isActive: boolean;
   createdAt: Date;
-  technician: { id: string } | null;
+  technician?: { id: string } | null;
+  customer?: { tradeName: string | null; legalName: string; id: string } | null;
 };
 
 type UsersTableProps = {
@@ -41,13 +42,20 @@ export function UsersTable({ users }: UsersTableProps) {
             Técnico
           </span>
         );
+      case "CUSTOMER":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+            <Building2 className="h-3 w-3" />
+            Cliente
+          </span>
+        );
       default:
         return <span>{role}</span>;
     }
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="overflow-x-auto w-full rounded-2xl border border-border bg-card shadow-sm">
       <table className="min-w-full divide-y divide-border">
         <thead className="bg-muted/50">
           <tr>
@@ -58,7 +66,7 @@ export function UsersTable({ users }: UsersTableProps) {
               Acesso
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Perfil Técnico
+              Perfil Técnico / Empresa
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Status
@@ -86,7 +94,16 @@ export function UsersTable({ users }: UsersTableProps) {
               </td>
 
               <td className="px-4 py-4 text-sm text-muted-foreground">
-                {user.technician ? (
+                {user.role === "CUSTOMER" ? (
+                  user.customer ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                      <Building2 className="h-3.5 w-3.5 opacity-70" />
+                      {user.customer.tradeName || user.customer.legalName}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-destructive opacity-80">Empresa não vinculada</span>
+                  )
+                ) : user.technician ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400">
                     Sincronizado
                   </span>

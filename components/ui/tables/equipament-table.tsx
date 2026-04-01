@@ -25,6 +25,7 @@ type EquipmentRow = {
 
 type EquipmentTableProps = {
   equipment: EquipmentRow[];
+  userRole?: string;
 };
 
 const statusMap: Record<string, string> = {
@@ -43,9 +44,9 @@ const statusClassMap: Record<string, string> = {
   INACTIVE: "bg-slate-200 text-slate-700",
 };
 
-export function EquipmentTable({ equipment }: EquipmentTableProps) {
+export function EquipmentTable({ equipment, userRole }: EquipmentTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+    <div className="overflow-x-auto w-full rounded-2xl border bg-white shadow-sm">
       <table className="min-w-full divide-y divide-slate-200">
         <thead className="bg-slate-50">
           <tr>
@@ -112,17 +113,19 @@ export function EquipmentTable({ equipment }: EquipmentTableProps) {
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/equipment/${item.id}`}
-                    className="rounded-lg border px-3 py-1.5 text-sm text-slate-700"
+                    className="rounded-lg border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                   >
                     Ver
                   </Link>
 
-                  <Link
-                    href={`/equipment/${item.id}/edit`}
-                    className="rounded-lg border px-3 py-1.5 text-sm text-slate-700"
-                  >
-                    Editar
-                  </Link>
+                  {userRole !== "CUSTOMER" && (
+                    <Link
+                      href={`/equipment/${item.id}/edit`}
+                      className="rounded-lg border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      Editar
+                    </Link>
+                  )}
                 </div>
               </td>
             </tr>

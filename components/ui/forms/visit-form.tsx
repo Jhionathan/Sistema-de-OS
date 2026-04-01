@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,13 +44,7 @@ const STATUS_OPTIONS = [
 const TECHNICIAN_OPTIONS = (technicians: Technician[]) =>
   technicians.map((tech) => ({ value: tech.id, label: tech.name }));
 
-const EQUIPMENT_OPTIONS = (equipment: EquipmentOption[]) =>
-  equipment.map((item) => ({
-    value: item.id,
-    label: `${item.customer.tradeName || item.customer.legalName} • ${item.unit.name} • ${item.equipmentType}${
-      item.assetTag ? ` • ${item.assetTag}` : ""
-    }`,
-  }));
+
 
 function formatDateTimeForInput(date: Date | null | undefined): string {
   if (!date) return "";
@@ -59,9 +53,23 @@ function formatDateTimeForInput(date: Date | null | undefined): string {
 
 export function VisitForm({ visit, equipment, technicians }: VisitFormProps) {
   const router = useRouter();
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [selectedUnitId, setSelectedUnitId] = useState<string>("");
+
+  useEffect(() => {
+    if (visit?.equipmentId) {
+      const eq = equipment.find((e) => e.id === visit.equipmentId);
+      if (eq) {
+        setSelectedCustomerId(eq.customerId);
+        setSelectedUnitId(eq.unitId);
+      }
+    }
+  }, [visit, equipment]);
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
     watch,
   } = useForm<VisitInput>({
@@ -89,6 +97,46 @@ export function VisitForm({ visit, equipment, technicians }: VisitFormProps) {
     return equipment.find((item) => item.id === equipmentId);
   }, [equipment, equipmentId]);
 
+  const { customers, units, filteredEquipment } = useMemo(() => {
+    const custMap = new Map<string, { value: string; label: string }>();
+    const unitMap = new Map<string, { value: string; label: string }>();
+    const equipList: { value: string; label: string }[] = [];
+
+    equipment.forEach((item) => {
+      // populate customers map
+      if (!custMap.has(item.customer.id)) {
+        custMap.set(item.customer.id, {
+          value: item.customer.id,
+          label: item.customer.tradeName || item.customer.legalName,
+        });
+      }
+
+      const matchesCustomer = !selectedCustomerId || item.customerId === selectedCustomerId;
+
+      if (matchesCustomer && !unitMap.has(item.unit.id)) {
+        unitMap.set(item.unit.id, {
+          value: item.unit.id,
+          label: item.unit.name,
+        });
+      }
+
+      const matchesUnit = !selectedUnitId || item.unitId === selectedUnitId;
+
+      if (matchesCustomer && matchesUnit) {
+        equipList.push({
+          value: item.id,
+          label: `${item.equipmentType}${item.assetTag ? ` • ${item.assetTag}` : ""}`,
+        });
+      }
+    });
+
+    return {
+      customers: Array.from(custMap.values()).sort((a, b) => a.label.localeCompare(b.label)),
+      units: Array.from(unitMap.values()).sort((a, b) => a.label.localeCompare(b.label)),
+      filteredEquipment: equipList.sort((a, b) => a.label.localeCompare(b.label)),
+    };
+  }, [equipment, selectedCustomerId, selectedUnitId]);
+
   async function onSubmit(data: VisitInput) {
     try {
       if (visit) {
@@ -109,13 +157,48 @@ export function VisitForm({ visit, equipment, technicians }: VisitFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 grid gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4 sm:grid-cols-3">
           <FormSelect
-            {...register("equipmentId")}
-            label="Equipamento"
-            options={EQUIPMENT_OPTIONS(equipment)}
-            placeholder="Selecione um equipamento"
+            label="1. Cliente (Filtro)"
+            options={customers}
+            value={selectedCustomerId}
+            onChange={(e) => {
+              setSelectedCustomerId(e.target.value);
+              setSelectedUnitId("");
+              setValue("equipmentId", "");
+            }}
+            placeholder="Todos os clientes"
+            name="customerFilter"
+          />
+
+          <FormSelect
+            label="2. Unidade (Filtro)"
+            options={units}
+            value={selectedUnitId}
+            onChange={(e) => {
+              setSelectedUnitId(e.target.value);
+              setValue("equipmentId", "");
+            }}
+            placeholder={selectedCustomerId ? "Todas as unidades" : "Selecione o cliente"}
+            disabled={!selectedCustomerId || units.length === 0}
+            name="unitFilter"
+          />
+
+          <FormSelect
+            {...register("equipmentId", {
+              onChange: (e) => {
+                const eq = equipment.find(x => x.id === e.target.value);
+                if (eq) {
+                   if (!selectedCustomerId) setSelectedCustomerId(eq.customerId);
+                   if (!selectedUnitId) setSelectedUnitId(eq.unitId);
+                }
+              }
+            })}
+            label="3. Equipamento *"
+            options={filteredEquipment}
+            placeholder={filteredEquipment.length > 0 ? "Selecione o equipamento" : "Nenhum disponível"}
             error={errors.equipmentId?.message}
+            disabled={filteredEquipment.length === 0}
             required
           />
         </div>

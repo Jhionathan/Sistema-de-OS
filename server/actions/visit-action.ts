@@ -7,8 +7,8 @@ import { redirect } from "next/navigation";
 import {
   requireTechnicianOwnershipOrPrivilegedAccess,
   requireVisitPermission,
+  requireAuthenticatedUser,
 } from "@/lib/action-guards";
-
 
 function normalizeOptional(value?: string) {
   if (!value) return null;
@@ -161,5 +161,46 @@ export async function updateVisit(id: string, input: VisitInput) {
   });
 
   revalidatePath("/visits");
+  revalidatePath("/tickets");
   revalidatePath(`/visits/${id}`);
+}
+
+export async function createTicket(data: { equipmentId: string, reportedIssue: string, scheduledAt: string }) {
+  const session = await requireAuthenticatedUser();
+
+  if (!data.equipmentId || !data.reportedIssue || !data.scheduledAt) {
+    throw new Error("Preencha todos os campos obrigatórios.");
+  }
+
+  const equipment = await prisma.equipment.findUnique({
+    where: { id: data.equipmentId },
+  });
+
+  if (!equipment) {
+    throw new Error("Equipamento não encontrado.");
+  }
+
+  // Se for CUSTOMER, só pode abrir ticket na própria empresa
+  if (session.user.role === "CUSTOMER") {
+    if (equipment.customerId !== session.user.customerId) {
+        throw new Error("Acesso negado ao equipamento.");
+    }
+  }
+
+  await prisma.visit.create({
+    data: {
+      equipmentId: equipment.id,
+      customerId: equipment.customerId,
+      unitId: equipment.unitId,
+      scheduledAt: new Date(data.scheduledAt),
+      visitType: "CORRECTIVE",
+      status: "REQUESTED",
+      reportedIssue: data.reportedIssue,
+      requiresReturn: false,
+      createdByUserId: session.user.id,
+    },
+  });
+
+  revalidatePath("/visits");
+  revalidatePath("/tickets");
 }

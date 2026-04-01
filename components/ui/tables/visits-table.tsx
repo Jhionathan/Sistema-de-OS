@@ -26,6 +26,7 @@ type VisitRow = {
 
 type VisitsTableProps = {
   visits: VisitRow[];
+  userRole?: string;
 };
 
 const visitTypeMap: Record<string, string> = {
@@ -38,6 +39,7 @@ const visitTypeMap: Record<string, string> = {
 };
 
 const statusMap: Record<string, string> = {
+  REQUESTED: "Aberto (Triagem)",
   SCHEDULED: "Agendada",
   IN_PROGRESS: "Em andamento",
   COMPLETED: "Concluída",
@@ -46,6 +48,7 @@ const statusMap: Record<string, string> = {
 };
 
 const statusClassMap: Record<string, string> = {
+  REQUESTED: "bg-orange-100 text-orange-700 font-bold border border-orange-200 shadow-sm",
   SCHEDULED: "bg-blue-100 text-blue-700",
   IN_PROGRESS: "bg-amber-100 text-amber-700",
   COMPLETED: "bg-green-100 text-green-700",
@@ -53,9 +56,9 @@ const statusClassMap: Record<string, string> = {
   PENDING_RETURN: "bg-red-100 text-red-700",
 };
 
-export function VisitsTable({ visits }: VisitsTableProps) {
+export function VisitsTable({ visits, userRole }: VisitsTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+    <div className="overflow-x-auto w-full rounded-2xl border bg-white shadow-sm">
       <table className="min-w-full divide-y divide-slate-200">
         <thead className="bg-slate-50">
           <tr>
@@ -131,17 +134,19 @@ export function VisitsTable({ visits }: VisitsTableProps) {
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`/visits/${visit.id}`}
-                    className="rounded-lg border px-3 py-1.5 text-sm text-slate-700"
+                    className="rounded-lg border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                   >
                     Ver
                   </Link>
 
-                  <Link
-                    href={`/visits/${visit.id}/edit`}
-                    className="rounded-lg border px-3 py-1.5 text-sm text-slate-700"
-                  >
-                    Editar
-                  </Link>
+                  {userRole !== "CUSTOMER" && (
+                    <Link
+                      href={`/visits/${visit.id}/edit`}
+                      className="rounded-lg border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      Editar
+                    </Link>
+                  )}
                 </div>
               </td>
             </tr>

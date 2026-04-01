@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 type DashboardUser = {
   id?: string;
   role?: string;
+  customerId?: string | null;
+  unitId?: string | null;
 };
 
 export async function getDashboardStats(user?: DashboardUser) {
@@ -19,27 +21,27 @@ export async function getDashboardStats(user?: DashboardUser) {
   endOfMonth.setHours(23, 59, 59, 999);
 
   const isTechnician = user?.role === "TECHNICIAN";
+  const isCustomer = user?.role === "CUSTOMER";
 
   let technicianId: string | null = null;
-
   if (isTechnician && user?.id) {
     const technician = await prisma.technician.findFirst({
-      where: {
-        userId: user.id,
-      },
-      select: {
-        id: true,
-      },
+      where: { userId: user.id },
+      select: { id: true },
     });
-
     technicianId = technician?.id ?? null;
   }
 
-  const visitWhereForTechnician = technicianId
-    ? { technicianId }
-    : isTechnician
-      ? { technicianId: "__no_match__" }
-      : {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let baseFilters: any = {};
+  if (isTechnician) {
+    baseFilters = technicianId ? { technicianId } : { technicianId: "__no_match__" };
+  } else if (isCustomer) {
+    baseFilters = {
+      customerId: user?.customerId ?? "__no_match__",
+      ...(user?.unitId ? { unitId: user.unitId } : {}),
+    };
+  }
 
   const [
     totalCustomers,
@@ -54,7 +56,7 @@ export async function getDashboardStats(user?: DashboardUser) {
     nextVisits,
     visitsByStatus,
   ] = await Promise.all([
-    isTechnician
+    isTechnician || isCustomer
       ? Promise.resolve(0)
       : prisma.customer.count({
           where: { isActive: true },
@@ -63,12 +65,12 @@ export async function getDashboardStats(user?: DashboardUser) {
     isTechnician
       ? Promise.resolve(0)
       : prisma.equipment.count({
-          where: { status: "ACTIVE" },
+          where: { status: "ACTIVE", ...baseFilters },
         }),
 
     prisma.visit.count({
       where: {
-        ...visitWhereForTechnician,
+        ...baseFilters,
         scheduledAt: {
           gte: startOfToday,
           lte: endOfToday,
@@ -78,14 +80,14 @@ export async function getDashboardStats(user?: DashboardUser) {
 
     prisma.visit.count({
       where: {
-        ...visitWhereForTechnician,
+        ...baseFilters,
         status: "PENDING_RETURN",
       },
     }),
 
     prisma.visit.count({
       where: {
-        ...visitWhereForTechnician,
+        ...baseFilters,
         scheduledAt: {
           lt: now,
         },
@@ -100,12 +102,13 @@ export async function getDashboardStats(user?: DashboardUser) {
       : prisma.equipment.count({
           where: {
             status: "IN_MAINTENANCE",
+            ...baseFilters,
           },
         }),
 
     prisma.visit.count({
       where: {
-        ...visitWhereForTechnician,
+        ...baseFilters,
         status: "COMPLETED",
         scheduledAt: {
           gte: startOfMonth,
@@ -114,7 +117,7 @@ export async function getDashboardStats(user?: DashboardUser) {
       },
     }),
 
-    isTechnician
+    isTechnician || isCustomer
       ? Promise.resolve(0)
       : prisma.technician.count({
           where: {
@@ -124,7 +127,7 @@ export async function getDashboardStats(user?: DashboardUser) {
 
     prisma.visit.findMany({
       where: {
-        ...visitWhereForTechnician,
+        ...baseFilters,
       },
       orderBy: {
         scheduledAt: "desc",
@@ -140,7 +143,7 @@ export async function getDashboardStats(user?: DashboardUser) {
 
     prisma.visit.findMany({
       where: {
-        ...visitWhereForTechnician,
+        ...baseFilters,
         scheduledAt: {
           gte: now,
         },
@@ -163,7 +166,7 @@ export async function getDashboardStats(user?: DashboardUser) {
     prisma.visit.groupBy({
       by: ["status"],
       where: {
-        ...visitWhereForTechnician,
+        ...baseFilters,
       },
       _count: {
         status: true,
@@ -185,6 +188,7 @@ export async function getDashboardStats(user?: DashboardUser) {
 
   return {
     isTechnician,
+    isCustomer,
     totalCustomers,
     totalActiveEquipment,
     visitsToday,

@@ -15,6 +15,7 @@ export const visitSchema = z.object({
     "INSPECTION",
   ]),
   status: z.enum([
+    "REQUESTED",
     "SCHEDULED",
     "IN_PROGRESS",
     "COMPLETED",

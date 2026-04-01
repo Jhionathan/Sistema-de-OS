@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEquipmentById } from "@/server/queries/equipment-queries";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
-
+import { QRCodeGenerator } from "@/components/ui/equipment/qr-code-generator";
 
 type EquipmentDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -39,7 +39,7 @@ export default async function EquipmentDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             {equipment.equipmentType}
@@ -52,7 +52,7 @@ export default async function EquipmentDetailPage({
 
         <Link
           href={`/equipment/${equipment.id}/edit`}
-          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700"
+          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Editar
         </Link>
@@ -105,6 +105,11 @@ export default async function EquipmentDetailPage({
         </div>
 
         <div className="space-y-6">
+          <QRCodeGenerator 
+            equipmentId={equipment.id} 
+            equipmentName={`${equipment.equipmentType} ${equipment.brand ? `(${equipment.brand})` : ""}`} 
+          />
+
           <div className="rounded-2xl border bg-white p-6 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Resumo</h2>
 

@@ -1,35 +1,37 @@
 import Link from "next/link";
 import { getEquipment } from "@/server/queries/equipment-queries";
 import { EquipmentTable } from "@/components/ui/tables/equipament-table";
-import { requireMasterDataAccess } from "@/lib/auth-guards";
-
+import { requireOperationalAccess } from "@/lib/auth-guards";
+import { isCustomer } from "@/lib/permissions";
 
 export default async function EquipmentPage() {
-  await requireMasterDataAccess();
+  const session = await requireOperationalAccess();
   
-  const equipment = await getEquipment();
+  const equipment = await getEquipment(session.user);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Equipamentos
+            {isCustomer(session.user.role) ? "Meus Equipamentos" : "Equipamentos"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gerencie os equipamentos em comodato.
+            {isCustomer(session.user.role) ? "Visualize os equipamentos associados à sua conta." : "Gerencie os equipamentos em comodato."}
           </p>
         </div>
 
-        <Link
-          href="/equipment/new"
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-        >
-          Novo equipamento
-        </Link>
+        {!isCustomer(session.user.role) && (
+          <Link
+            href="/equipment/new"
+            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+          >
+            Novo equipamento
+          </Link>
+        )}
       </div>
 
-      <EquipmentTable equipment={equipment} />
+      <EquipmentTable equipment={equipment} userRole={session.user.role} />
     </div>
   );
 }

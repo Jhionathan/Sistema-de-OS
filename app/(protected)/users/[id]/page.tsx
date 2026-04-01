@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getUserById } from "@/server/queries/user-queries";
 import { UserForm } from "@/components/ui/forms/user-form";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
+import { getCustomersForEquipmentSelect, getUnitsForEquipmentSelect } from "@/server/queries/equipment-queries";
 
 export default async function EditUserPage({
   params,
@@ -10,7 +11,11 @@ export default async function EditUserPage({
 }) {
   await requireMasterDataAccess();
   
-  const user = await getUserById(params.id);
+  const [user, customers, units] = await Promise.all([
+    getUserById(params.id),
+    getCustomersForEquipmentSelect(),
+    getUnitsForEquipmentSelect()
+  ]);
 
   if (!user) {
     notFound();
@@ -28,7 +33,7 @@ export default async function EditUserPage({
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <UserForm user={user} />
+        <UserForm user={user} customers={customers} units={units} />
       </div>
     </div>
   );

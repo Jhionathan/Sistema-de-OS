@@ -13,6 +13,8 @@ type GetVisitsFilters = {
 type SessionUser = {
   id?: string;
   role?: string;
+  customerId?: string | null;
+  unitId?: string | null;
 };
 
 export async function getVisits(
@@ -23,15 +25,15 @@ export async function getVisits(
 
   if (user?.role === "TECHNICIAN") {
     const technician = await prisma.technician.findFirst({
-      where: {
-        userId: user.id,
-      },
-      select: {
-        id: true,
-      },
+      where: { userId: user.id },
+      select: { id: true },
     });
-
     where.technicianId = technician?.id ?? "__no_match__";
+  } else if (user?.role === "CUSTOMER") {
+    where.customerId = user.customerId ?? "__no_match__";
+    if (user.unitId) {
+      where.unitId = user.unitId;
+    }
   }
 
   if (filters?.status) {
@@ -46,7 +48,7 @@ export async function getVisits(
     where.technicianId = filters.technicianId;
   }
 
-  if (filters?.customerId && user?.role !== "TECHNICIAN") {
+  if (filters?.customerId && user?.role !== "TECHNICIAN" && user?.role !== "CUSTOMER") {
     where.customerId = filters.customerId;
   }
 

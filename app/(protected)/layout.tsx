@@ -23,9 +23,10 @@ export default async function ProtectedLayout({
           userRole={session.user.role ?? ""}
         />
 
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-screen flex-col w-full min-w-0">
           <AppHeader
             userName={session.user.name ?? "Usuário"}
+            userEmail={session.user.email ?? ""}
             userRole={session.user.role ?? ""}
           />
 

@@ -17,6 +17,13 @@ export async function getUsers() {
           id: true,
         },
       },
+      customer: {
+        select: {
+          id: true,
+          tradeName: true,
+          legalName: true,
+        }
+      }
     },
     orderBy: {
       createdAt: "desc",
@@ -35,11 +42,20 @@ export async function getUserById(id: string) {
       email: true,
       role: true,
       isActive: true,
+      customerId: true,
+      unitId: true,
       technician: {
         select: {
           id: true,
         },
       },
+      customer: {
+        select: {
+          id: true,
+          tradeName: true,
+          legalName: true,
+        }
+      }
     },
   });
 }

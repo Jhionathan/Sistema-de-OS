@@ -1,7 +1,19 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getEquipment() {
+export async function getEquipment(user?: { role?: string; customerId?: string | null; unitId?: string | null }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let baseFilters: any = {};
+  if (user?.role === "CUSTOMER") {
+    baseFilters = {
+      customerId: user.customerId ?? "__no_match__",
+      ...(user.unitId ? { unitId: user.unitId } : {}),
+    };
+  }
+
   return prisma.equipment.findMany({
+    where: {
+      ...baseFilters,
+    },
     orderBy: {
       createdAt: "desc",
     },

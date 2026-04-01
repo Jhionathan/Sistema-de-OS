@@ -15,6 +15,7 @@ const roleLabelMap: Record<string, string> = {
   ADMIN: "Administrador",
   MANAGER: "Gestor",
   TECHNICIAN: "Técnico",
+  CUSTOMER: "Cliente",
 };
 
 export function AppSidebar({
@@ -23,7 +24,7 @@ export function AppSidebar({
   userRole,
 }: AppSidebarProps) {
   return (
-    <aside className="hidden border-r border-border bg-card/60 backdrop-blur-lg lg:flex lg:flex-col shadow-sm">
+    <aside className="hidden sticky top-0 h-screen overflow-hidden border-r border-border bg-card/60 backdrop-blur-lg lg:flex lg:flex-col shadow-sm">
       <div className="border-b border-border px-6 py-6">
         <Link href="/dashboard" className="flex items-center gap-3 transition-opacity hover:opacity-80">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 shadow-sm">
@@ -40,7 +41,7 @@ export function AppSidebar({
         </Link>
       </div>
 
-      <div className="flex-1 px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6">
         <nav className="space-y-1.5">
           <SidebarNavLink href="/dashboard" icon="dashboard">
             Dashboard
@@ -48,6 +49,10 @@ export function AppSidebar({
 
           {canManageMasterData(userRole) ? (
             <>
+              <SidebarNavLink href="/tickets" icon="dashboard">
+                Chamados (Triagem)
+              </SidebarNavLink>
+
               <SidebarNavLink href="/customers" icon="customers">
                 Clientes
               </SidebarNavLink>
@@ -70,8 +75,14 @@ export function AppSidebar({
             </>
           ) : null}
 
+          {userRole === "CUSTOMER" ? (
+            <SidebarNavLink href="/equipment" icon="equipment">
+              Meus Equipamentos
+            </SidebarNavLink>
+          ) : null}
+
           <SidebarNavLink href="/visits" icon="visits">
-            Visitas
+            {userRole === "CUSTOMER" ? "Minhas Visitas" : "Visitas"}
           </SidebarNavLink>
         </nav>
       </div>
