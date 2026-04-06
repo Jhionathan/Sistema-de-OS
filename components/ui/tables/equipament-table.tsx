@@ -40,7 +40,7 @@ const statusClassMap: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-700",
   IN_MAINTENANCE: "bg-amber-100 text-amber-700",
   REMOVED: "bg-slate-200 text-slate-700",
-  REPLACED: "bg-blue-100 text-blue-700",
+  REPLACED: "bg-[#6b7747]/15 text-[#6b7747]",
   INACTIVE: "bg-slate-200 text-slate-700",
 };
 

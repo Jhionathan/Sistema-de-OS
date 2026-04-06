@@ -2,18 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getUnitById } from "@/server/queries/unit-queries";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
-
+import { UnitDetailsCard } from "@/components/ui/units/unit-details-card";
+import { VisitsHistoryCard } from "@/components/ui/shared/visits-history-card";
 
 type UnitDetailPageProps = {
   params: Promise<{ id: string }>;
-};
-
-const visitStatusMap: Record<string, string> = {
-  SCHEDULED: "Agendada",
-  IN_PROGRESS: "Em andamento",
-  COMPLETED: "Concluída",
-  CANCELED: "Cancelada",
-  PENDING_RETURN: "Pendente retorno",
 };
 
 export default async function UnitDetailPage({ params }: UnitDetailPageProps) {
@@ -40,38 +33,14 @@ export default async function UnitDetailPage({ params }: UnitDetailPageProps) {
 
         <Link
           href={`/units/${unit.id}/edit`}
-          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700"
+          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Editar
         </Link>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">
-            Dados da unidade
-          </h2>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Info label="Cliente" value={unit.customer.tradeName || unit.customer.legalName} />
-            <Info label="Responsável" value={unit.contactName} />
-            <Info label="Telefone" value={unit.contactPhone} />
-            <Info label="Rua" value={unit.street} />
-            <Info label="Número" value={unit.number} />
-            <Info label="Bairro" value={unit.district} />
-            <Info label="Cidade" value={unit.city} />
-            <Info label="Estado" value={unit.state} />
-            <Info label="CEP" value={unit.zipCode} />
-            <Info label="Status" value={unit.isActive ? "Ativa" : "Inativa"} />
-          </div>
-
-          <div className="mt-6">
-            <p className="text-sm font-medium text-slate-700">Observações</p>
-            <p className="mt-2 text-sm text-slate-600">
-              {unit.notes || "Nenhuma observação cadastrada."}
-            </p>
-          </div>
-        </div>
+        <UnitDetailsCard unit={unit} />
 
         <div className="space-y-6">
           <div className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -90,53 +59,9 @@ export default async function UnitDetailPage({ params }: UnitDetailPageProps) {
             </div>
           </div>
 
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">
-              Últimas visitas
-            </h2>
-
-            <div className="mt-4 space-y-3">
-              {unit.visits.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Nenhuma visita encontrada.
-                </p>
-              ) : (
-                unit.visits.map((visit) => (
-                  <div key={visit.id} className="rounded-xl border p-3">
-                    <p className="font-medium text-slate-900">
-                      {visitStatusMap[visit.status] ?? visit.status}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {new Intl.DateTimeFormat("pt-BR", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      }).format(new Date(visit.scheduledAt))}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {visit.technician?.name ?? "Sem técnico"}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <VisitsHistoryCard visits={unit.visits} />
         </div>
       </div>
-    </div>
-  );
-}
-
-function Info({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null;
-}) {
-  return (
-    <div>
-      <p className="text-sm font-medium text-slate-700">{label}</p>
-      <p className="mt-1 text-sm text-slate-600">{value || "-"}</p>
     </div>
   );
 }

@@ -1,11 +1,13 @@
 import { TicketForm } from "@/components/ui/forms/ticket-form";
+import { auth } from "@/lib/auth";
 import { getEquipmentForVisitSelect } from "@/server/queries/visit-queries";
 import { LifeBuoy } from "lucide-react";
 
 export default async function NewTicketPage(props: {
   searchParams?: Promise<{ equipmentId?: string }>;
 }) {
-  const equipment = await getEquipmentForVisitSelect();
+  const session = await auth();
+  const equipment = await getEquipmentForVisitSelect(session?.user);
   
   const resolvedParams = (await props.searchParams) || {};
   const initialEquipmentId = resolvedParams.equipmentId;

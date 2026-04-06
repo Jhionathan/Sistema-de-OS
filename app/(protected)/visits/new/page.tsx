@@ -1,12 +1,14 @@
 import { VisitForm } from "@/components/ui/forms/visit-form";
+import { auth } from "@/lib/auth";
 import {
   getEquipmentForVisitSelect,
   getTechniciansForVisitSelect,
 } from "@/server/queries/visit-queries";
 
 export default async function NewVisitPage() {
+  const session = await auth();
   const [equipment, technicians] = await Promise.all([
-    getEquipmentForVisitSelect(),
+    getEquipmentForVisitSelect(session?.user),
     getTechniciansForVisitSelect(),
   ]);
 

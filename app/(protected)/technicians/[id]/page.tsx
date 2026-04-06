@@ -1,19 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTechnicianById } from "@/server/queries/techbician-queries";
+import { getTechnicianById } from "@/server/queries/technician-queries";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
-
+import { TechnicianDetailsCard } from "@/components/ui/technicians/technician-details-card";
+import { TechnicianVisitsList } from "@/components/ui/technicians/technician-visits-list";
 
 type TechnicianDetailPageProps = {
   params: Promise<{ id: string }>;
-};
-
-const visitStatusMap: Record<string, string> = {
-  SCHEDULED: "Agendada",
-  IN_PROGRESS: "Em andamento",
-  COMPLETED: "Concluída",
-  CANCELED: "Cancelada",
-  PENDING_RETURN: "Pendente retorno",
 };
 
 export default async function TechnicianDetailPage({
@@ -21,7 +14,6 @@ export default async function TechnicianDetailPage({
 }: TechnicianDetailPageProps) {
   const { id } = await params;
   const technician = await getTechnicianById(id);
-
 
   if (!technician) {
     notFound();
@@ -42,27 +34,14 @@ export default async function TechnicianDetailPage({
 
         <Link
           href={`/technicians/${technician.id}/edit`}
-          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700"
+          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Editar
         </Link>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">
-            Dados do técnico
-          </h2>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Info label="Nome" value={technician.name} />
-            <Info label="E-mail" value={technician.email} />
-            <Info label="Telefone" value={technician.phone} />
-            <Info label="Status" value={technician.isActive ? "Ativo" : "Inativo"} />
-            <Info label="Usuário vinculado" value={technician.user?.email ?? null} />
-            <Info label="Perfil do usuário" value={technician.user?.role ?? null} />
-          </div>
-        </div>
+        <TechnicianDetailsCard technician={technician} />
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">Resumo</h2>
@@ -78,62 +57,7 @@ export default async function TechnicianDetailPage({
         </div>
       </div>
 
-      <div className="rounded-2xl border bg-white p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">
-          Últimas visitas
-        </h2>
-
-        <div className="mt-4 space-y-3">
-          {technician.visits.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              Nenhuma visita encontrada para este técnico.
-            </p>
-          ) : (
-            technician.visits.map((visit) => (
-              <div key={visit.id} className="rounded-xl border p-4">
-                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <p className="font-medium text-slate-900">
-                      {visit.customer.tradeName || visit.customer.legalName}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      {visit.unit.name} • {visit.equipment.equipmentType}
-                    </p>
-                  </div>
-
-                  <div className="text-sm text-slate-500">
-                    {new Intl.DateTimeFormat("pt-BR", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    }).format(new Date(visit.scheduledAt))}
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">
-                    {visitStatusMap[visit.status] ?? visit.status}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Info({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null;
-}) {
-  return (
-    <div>
-      <p className="text-sm font-medium text-slate-700">{label}</p>
-      <p className="mt-1 text-sm text-slate-600">{value || "-"}</p>
+      <TechnicianVisitsList visits={technician.visits} />
     </div>
   );
 }

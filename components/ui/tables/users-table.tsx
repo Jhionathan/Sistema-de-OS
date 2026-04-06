@@ -30,7 +30,7 @@ export function UsersTable({ users }: UsersTableProps) {
         );
       case "MANAGER":
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#6b7747]/15 px-2.5 py-0.5 text-xs font-medium text-[#6b7747] dark:bg-[#6b7747]/30 dark:text-[#6b7747]">
             <Settings className="h-3 w-3" />
             Gestor
           </span>

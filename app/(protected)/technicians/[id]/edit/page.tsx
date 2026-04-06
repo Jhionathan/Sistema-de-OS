@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getTechnicianById } from "@/server/queries/techbician-queries";
+import { getTechnicianById } from "@/server/queries/technician-queries";
 import { TechnicianForm } from "@/components/ui/forms/technican-form";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
 

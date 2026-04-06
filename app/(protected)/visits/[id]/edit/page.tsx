@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { VisitForm } from "@/components/ui/forms/visit-form";
 import {
   getEquipmentForVisitSelect,
@@ -12,10 +13,11 @@ type EditVisitPageProps = {
 
 export default async function EditVisitPage({ params }: EditVisitPageProps) {
   const { id } = await params;
+  const session = await auth();
 
   const [visit, equipment, technicians] = await Promise.all([
     getVisitById(id),
-    getEquipmentForVisitSelect(),
+    getEquipmentForVisitSelect(session?.user),
     getTechniciansForVisitSelect(),
   ]);
 

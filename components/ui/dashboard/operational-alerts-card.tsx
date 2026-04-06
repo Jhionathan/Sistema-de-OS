@@ -30,7 +30,7 @@ export function OperationalAlertsCard({
           <span className="text-sm text-slate-600">
             Equipamentos em manutenção
           </span>
-          <strong className="text-blue-600">{equipmentInMaintenance}</strong>
+          <strong className="text-[#6b7747]">{equipmentInMaintenance}</strong>
         </div>
       </div>
     </div>

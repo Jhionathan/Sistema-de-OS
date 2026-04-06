@@ -96,13 +96,22 @@ export async function getVisitById(id: string) {
   });
 }
 
-export async function getEquipmentForVisitSelect() {
-  return prisma.equipment.findMany({
-    where: {
-      status: {
-        in: ["ACTIVE", "IN_MAINTENANCE"],
-      },
+export async function getEquipmentForVisitSelect(user?: SessionUser) {
+  const where: Prisma.EquipmentWhereInput = {
+    status: {
+      in: ["ACTIVE", "IN_MAINTENANCE"],
     },
+  };
+
+  if (user?.role === "CUSTOMER") {
+    where.customerId = user.customerId ?? "__no_match__";
+    if (user.unitId) {
+      where.unitId = user.unitId;
+    }
+  }
+
+  return prisma.equipment.findMany({
+    where,
     orderBy: {
       createdAt: "desc",
     },

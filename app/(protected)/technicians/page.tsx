@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTechnicians } from "@/server/queries/techbician-queries";
+import { getTechnicians } from "@/server/queries/technician-queries";
 import { TechniciansTable } from "@/components/ui/tables/technicians-table";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
 
