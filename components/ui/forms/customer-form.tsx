@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { FormInput } from "./form-input";
 import { FormCheckbox } from "./form-checkbox";
 import { FormTextarea } from "./form-textarea";
+import { maskCpfCnpj, maskPhone } from "@/lib/utils";
 
 type CustomerFormProps = {
   customer?: Customer | null;
@@ -70,10 +71,14 @@ export function CustomerForm({ customer }: CustomerFormProps) {
         />
 
         <FormInput
-          {...register("document")}
           label="Documento"
           placeholder="CNPJ / CPF"
           error={errors.document?.message}
+          {...register("document", {
+            onChange: (e) => {
+              e.target.value = maskCpfCnpj(e.target.value);
+            },
+          })}
         />
 
         <FormInput
@@ -85,10 +90,14 @@ export function CustomerForm({ customer }: CustomerFormProps) {
         />
 
         <FormInput
-          {...register("phone")}
           label="Telefone"
           placeholder="(62) 99999-9999"
           error={errors.phone?.message}
+          {...register("phone", {
+            onChange: (e) => {
+              e.target.value = maskPhone(e.target.value);
+            },
+          })}
         />
 
         <div className="md:col-span-2">

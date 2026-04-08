@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getEquipmentById } from "@/server/queries/equipment-queries";
-import { requireMasterDataAccess } from "@/lib/auth-guards";
+import { requireOperationalAccess } from "@/lib/auth-guards";
+import { canManageMasterData } from "@/lib/permissions";
 import { QRCodeGenerator } from "@/components/ui/equipment/qr-code-generator";
 import { EquipmentDetailsCard } from "@/components/ui/equipment/equipment-details-card";
 import { VisitsHistoryCard } from "@/components/ui/shared/visits-history-card";
@@ -14,12 +15,25 @@ export default async function EquipmentDetailPage({
   params,
 }: EquipmentDetailPageProps) {
   
-  await requireMasterDataAccess();
+  const session = await requireOperationalAccess();
   const { id } = await params;
   const equipment = await getEquipmentById(id);
 
   if (!equipment) {
     notFound();
+  }
+
+  // Data isolation check for CUSTOMER users
+  if (session.user.role === "CUSTOMER") {
+    if (equipment.customerId !== session.user.customerId) {
+        // Redireciona se tentar acessar equipamento de outro cliente
+        redirect("/dashboard");
+    }
+    
+    // Se o cliente for vinculado a uma unidade específica, restringe ainda mais
+    if (session.user.unitId && equipment.unitId !== session.user.unitId) {
+        redirect("/dashboard");
+    }
   }
   
   return (
@@ -35,12 +49,14 @@ export default async function EquipmentDetailPage({
           </p>
         </div>
 
-        <Link
-          href={`/equipment/${equipment.id}/edit`}
-          className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-        >
-          Editar
-        </Link>
+        {canManageMasterData(session.user.role) && (
+            <Link
+            href={`/equipment/${equipment.id}/edit`}
+            className="rounded-xl border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+            Editar
+            </Link>
+        )}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">

@@ -7,12 +7,13 @@ import { getCustomersForEquipmentSelect, getUnitsForEquipmentSelect } from "@/se
 export default async function EditUserPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await requireMasterDataAccess();
+  const { id } = await params;
   
   const [user, customers, units] = await Promise.all([
-    getUserById(params.id),
+    getUserById(id),
     getCustomersForEquipmentSelect(),
     getUnitsForEquipmentSelect()
   ]);

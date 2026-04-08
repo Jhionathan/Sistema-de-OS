@@ -7,6 +7,7 @@ export default {
   },
   session: {
     strategy: "jwt",
+    maxAge: 3600, // 1 hour in seconds
   },
   providers: [
     Credentials({

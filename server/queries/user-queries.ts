@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireMasterDataAccess } from "@/lib/auth-guards";
+import { requireAuth, requireMasterDataAccess } from "@/lib/auth-guards";
 
 export async function getUsers() {
   await requireMasterDataAccess();
@@ -59,3 +59,30 @@ export async function getUserById(id: string) {
     },
   });
 }
+
+export async function getMe() {
+  const session = await requireAuth();
+
+  return prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      customer: {
+        select: {
+          legalName: true,
+          tradeName: true,
+        },
+      },
+      unit: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+}
+

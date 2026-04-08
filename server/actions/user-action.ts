@@ -1,9 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { createUserSchema, updateUserSchema, type CreateUserInput, type UpdateUserInput } from "@/lib/validations/user";
+import { createUserSchema, updateUserSchema, changePasswordSchema, type CreateUserInput, type UpdateUserInput, type ChangePasswordInput } from "@/lib/validations/user";
 import { revalidatePath } from "next/cache";
-import { requireMasterDataAccess } from "@/lib/auth-guards";
+import { requireAuth, requireMasterDataAccess } from "@/lib/auth-guards";
 import bcrypt from "bcryptjs";
 
 function getPermissionError(currentUserRole: string, targetRole: string) {
@@ -150,3 +150,37 @@ export async function updateUser(id: string, input: UpdateUserInput) {
 
   revalidatePath("/users");
 }
+
+export async function updateOwnPassword(input: ChangePasswordInput) {
+  const session = await requireAuth();
+  
+  const parsed = changePasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error("Dados de senha inválidos.");
+  }
+
+  const { currentPassword, newPassword } = parsed.data;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+  });
+
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isValid) {
+    throw new Error("Senha atual incorreta.");
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 10);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: newHash },
+  });
+
+  revalidatePath("/profile");
+}
+

@@ -25,7 +25,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   return (
     <aside className="hidden sticky top-0 h-screen overflow-hidden border-r border-border bg-card/60 backdrop-blur-lg lg:flex lg:flex-col shadow-sm">
-      <div className="border-b border-border px-6 py-6">
+      <div className="border-b border-border px-6 py-4 flex items-center h-[82px]">
         <Link href="/dashboard" className="flex items-center gap-3 transition-opacity hover:opacity-80">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 shadow-sm">
             <ShieldCheck className="h-5 w-5 text-primary" />
@@ -89,18 +89,21 @@ export function AppSidebar({
 
       <div className="border-t border-border p-4">
         <div className="rounded-2xl border border-border/50 bg-secondary/30 p-4 transition-colors hover:bg-secondary/50 hover:border-border">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+          <Link 
+            href="/profile"
+            className="flex items-center gap-3 mb-4 rounded-xl p-2 -m-2 transition-colors hover:bg-primary/5 group"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 group-hover:border-primary/40 group-hover:bg-primary/20 transition-all">
               <UserCircle className="h-5 w-5 text-primary" />
             </div>
             <div className="overflow-hidden min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">{userName}</p>
-              <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
+              <p className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{userName}</p>
+              <p className="truncate text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Ver Perfil</p>
             </div>
-          </div>
+          </Link>
           
           <div className="flex items-center justify-between mt-2 mb-4">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Perfil</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Cargo</span>
             <span className="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-bold border border-primary/20">
               {roleLabelMap[userRole] ?? userRole}
             </span>
