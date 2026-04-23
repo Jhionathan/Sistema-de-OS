@@ -22,10 +22,10 @@ export function LoginBanner() {
             H4C<span className="text-gray-500/60">Distribuição</span>
           </span>
         </div>
-        <h1 className="text-4xl font-bold font-heading text-white max-w-lg mb-4 leading-tight drop-shadow-md">
+        <h1 className="text-4xl font-bold font-heading text-gray-500 max-w-lg mb-4 leading-tight drop-shadow-md">
           Gestão inteligente de visitas técnicas.
         </h1>
-        <p className="text-lg text-white/80 max-w-md drop-shadow-sm font-medium">
+        <p className="text-lg text-gray-500/80 max-w-md drop-shadow-sm font-medium">
           Otimize o fluxo de ordens de serviço, agende técnicos com facilidade e eleve a satisfação dos seus clientes.
         </p>
       </div>

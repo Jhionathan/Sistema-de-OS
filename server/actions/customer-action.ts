@@ -29,6 +29,8 @@ export async function createCustomer(input: CustomerInput) {
       email: normalizeOptional(data.email),
       phone: normalizeOptional(data.phone),
       notes: normalizeOptional(data.notes),
+      purchaseFrequencyDays: data.purchaseFrequencyDays,
+      lastPurchaseDate: data.lastPurchaseDate,
       isActive: data.isActive,
     },
   });
@@ -56,12 +58,28 @@ export async function updateCustomer(id: string, input: CustomerInput) {
       email: normalizeOptional(data.email),
       phone: normalizeOptional(data.phone),
       notes: normalizeOptional(data.notes),
+      purchaseFrequencyDays: data.purchaseFrequencyDays,
+      lastPurchaseDate: data.lastPurchaseDate,
       isActive: data.isActive,
     },
   });
 
   revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);
+}
+
+export async function recordCustomerPurchase(id: string) {
+  await requireMasterDataPermission();
+  await prisma.customer.update({
+    where: { id },
+    data: {
+      lastPurchaseDate: new Date(),
+    },
+  });
+
+  revalidatePath("/customers");
+  revalidatePath(`/customers/${id}`);
+  revalidatePath("/dashboard");
 }
     
 export async function toggleCustomerStatus(id: string, isActive: boolean) {

@@ -3,6 +3,7 @@ import { RecentVisitsCard } from "@/components/ui/dashboard/recent-visits-card";
 import { NextVisitsCard } from "@/components/ui/dashboard/next-visits-card";
 import { OperationalAlertsCard } from "@/components/ui/dashboard/operational-alerts-card";
 import { VisitsStatusCard } from "@/components/ui/dashboard/visits-status-card";
+import { PurchaseAlerts } from "@/components/ui/dashboard/purchase-alerts";
 import { 
   CalendarCheck, 
   RotateCcw, 
@@ -74,6 +75,8 @@ export function AdminDashboard({ data }: AdminDashboardProps) {
           icon={<UserCheck className="h-5 w-5" />}
         />
       </section>
+
+      <PurchaseAlerts alerts={data.purchaseAlerts} />
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <VisitsStatusCard visitsByStatus={data.visitsByStatus} />

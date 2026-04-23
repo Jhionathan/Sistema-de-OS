@@ -62,6 +62,7 @@ export function VisitsFilters({
             disabled={isPending}
           >
             <option value="">Todos</option>
+            <option value="REQUESTED">Aberto (Triagem)</option>
             <option value="SCHEDULED">Agendada</option>
             <option value="IN_PROGRESS">Em andamento</option>
             <option value="COMPLETED">Concluída</option>

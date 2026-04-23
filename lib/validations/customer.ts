@@ -8,6 +8,8 @@ export const customerSchema = z.object({
   phone: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
   isActive: z.boolean(),
+  purchaseFrequencyDays: z.coerce.number().int().min(0).optional().nullable(),
+  lastPurchaseDate: z.coerce.date().optional().nullable(),
 });
 
 export type CustomerInput = z.infer<typeof customerSchema>;

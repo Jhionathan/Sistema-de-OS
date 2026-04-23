@@ -55,6 +55,7 @@ export async function getDashboardStats(user?: DashboardUser) {
     recentVisits,
     nextVisits,
     visitsByStatus,
+    purchaseAlerts,
   ] = await Promise.all([
     isTechnician || isCustomer
       ? Promise.resolve(0)
@@ -172,9 +173,25 @@ export async function getDashboardStats(user?: DashboardUser) {
         status: true,
       },
     }),
+    isTechnician || isCustomer
+      ? Promise.resolve([])
+      : prisma.customer.findMany({
+          where: {
+            isActive: true,
+            purchaseFrequencyDays: { gt: 0 },
+          },
+          select: {
+            id: true,
+            legalName: true,
+            tradeName: true,
+            lastPurchaseDate: true,
+            purchaseFrequencyDays: true,
+          },
+        }),
   ]);
 
-  const statusMap = {
+  const statusMap: Record<string, number> = {
+    REQUESTED: 0,
     SCHEDULED: 0,
     IN_PROGRESS: 0,
     COMPLETED: 0,
@@ -200,5 +217,29 @@ export async function getDashboardStats(user?: DashboardUser) {
     recentVisits,
     nextVisits,
     visitsByStatus: statusMap,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    purchaseAlerts: (purchaseAlerts as any[]).map((customer) => {
+      const lastDate = customer.lastPurchaseDate ? new Date(customer.lastPurchaseDate) : null;
+      const frequency = Number(customer.purchaseFrequencyDays) || 0;
+      const nextDate = lastDate ? new Date(lastDate.getTime() + frequency * 24 * 60 * 60 * 1000) : null;
+      const warningDate = nextDate ? new Date(nextDate.getTime() - 24 * 60 * 60 * 1000) : null;
+      const isCurrentMonth = lastDate ? (lastDate.getMonth() === now.getMonth() && lastDate.getFullYear() === now.getFullYear()) : false;
+
+      let type: "OVERDUE" | "WARNING" | "MONTHLY_PENDING" | null = null;
+      if (!isCurrentMonth) {
+        type = "MONTHLY_PENDING";
+      } else if (nextDate && now >= nextDate) {
+        type = "OVERDUE";
+      } else if (warningDate && now >= warningDate) {
+        type = "WARNING";
+      }
+
+      return {
+        ...customer,
+        nextPurchaseDate: nextDate,
+        alertType: type,
+        isCurrentMonth,
+      };
+    }).filter((alert) => alert.alertType !== null),
   };
 }

@@ -34,6 +34,7 @@ const VISIT_TYPE_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
+  { value: "REQUESTED", label: "Aberto (Triagem)" },
   { value: "SCHEDULED", label: "Agendada" },
   { value: "IN_PROGRESS", label: "Em andamento" },
   { value: "COMPLETED", label: "Concluída" },

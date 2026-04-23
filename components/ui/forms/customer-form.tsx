@@ -23,7 +23,8 @@ export function CustomerForm({ customer }: CustomerFormProps) {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<CustomerInput>({
-    resolver: zodResolver(customerSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(customerSchema) as any,
     defaultValues: {
       legalName: customer?.legalName ?? "",
       tradeName: customer?.tradeName ?? "",
@@ -32,7 +33,10 @@ export function CustomerForm({ customer }: CustomerFormProps) {
       phone: customer?.phone ?? "",
       notes: customer?.notes ?? "",
       isActive: customer?.isActive ?? true,
-    },
+      purchaseFrequencyDays: customer?.purchaseFrequencyDays ?? "",
+      lastPurchaseDate: customer?.lastPurchaseDate ? new Date(customer.lastPurchaseDate).toISOString().split('T')[0] : "",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
   });
 
   async function onSubmit(data: CustomerInput) {
@@ -53,7 +57,8 @@ export function CustomerForm({ customer }: CustomerFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
         <FormInput
           {...register("legalName")}
@@ -108,6 +113,22 @@ export function CustomerForm({ customer }: CustomerFormProps) {
             error={errors.isActive?.message}
           />
         </div>
+
+        <FormInput
+          {...register("purchaseFrequencyDays")}
+          type="number"
+          label="Frequência de compra (dias)"
+          placeholder="Ex: 30"
+          error={errors.purchaseFrequencyDays?.message}
+        />
+
+        <FormInput
+          {...register("lastPurchaseDate")}
+          type="date"
+          label="Data da última compra"
+          error={errors.lastPurchaseDate?.message}
+          defaultValue={customer?.lastPurchaseDate ? new Date(customer.lastPurchaseDate).toISOString().split('T')[0] : ""}
+        />
       </div>
 
       <FormTextarea
