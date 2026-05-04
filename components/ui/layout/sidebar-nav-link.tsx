@@ -10,6 +10,7 @@ import {
   ClipboardList,
   UserCog,
   Shield,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,8 @@ type IconName =
   | "equipment"
   | "visits"
   | "technicians"
-  | "users";
+  | "users"
+  | "ticket";
 
 type SidebarNavLinkProps = {
   href: string;
@@ -36,6 +38,7 @@ const iconMap = {
   visits: ClipboardList,
   technicians: UserCog,
   users: Shield,
+  ticket: LifeBuoy,
 };
 
 export function SidebarNavLink({

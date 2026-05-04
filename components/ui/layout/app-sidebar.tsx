@@ -76,9 +76,14 @@ export function AppSidebar({
           ) : null}
 
           {userRole === "CUSTOMER" ? (
-            <SidebarNavLink href="/equipment" icon="equipment">
-              Meus Equipamentos
-            </SidebarNavLink>
+            <>
+              <SidebarNavLink href="/equipment" icon="equipment">
+                Meus Equipamentos
+              </SidebarNavLink>
+              <SidebarNavLink href="/tickets/new" icon="ticket">
+                Abrir Chamado
+              </SidebarNavLink>
+            </>
           ) : null}
 
           <SidebarNavLink href="/visits" icon="visits">

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { getDashboardStats } from "@/server/queries/dashboard-queries";
 import { AdminDashboard } from "@/components/ui/dashboard/admin-dashboard";
 import { TechnicianDashboard } from "@/components/ui/dashboard/technician-dashboard";
+import { CustomerDashboard } from "@/components/ui/dashboard/customer-dashboard";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -17,12 +18,16 @@ export default async function DashboardPage() {
         <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
           {data.isTechnician
             ? "Aqui está o resumo das suas visitas e atendimentos operacionais de hoje."
+            : data.isCustomer
+            ? "Bem-vindo ao seu painel de controle operacional."
             : "Aqui está o panorama operacional atualizado do seu sistema."}
         </p>
       </section>
 
       {data.isTechnician ? (
         <TechnicianDashboard data={data} />
+      ) : data.isCustomer ? (
+        <CustomerDashboard data={data} />
       ) : (
         <AdminDashboard data={data} />
       )}
