@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { FormSelect } from "./form-select";
 import { FormTextarea } from "./form-textarea";
 import { FormInput } from "./form-input";
+import { FormCheckbox } from "./form-checkbox";
 import { Loader2 } from "lucide-react";
 
 type EquipmentOption = Equipment & {
@@ -27,6 +28,7 @@ const ticketSchema = z.object({
   equipmentId: z.string().min(1, "Selecione o equipamento que apresenta o defeito"),
   reportedIssue: z.string().min(5, "Por favor, descreva o problema com mais detalhes"),
   scheduledAt: z.string().min(1, "Informe a data sugerida para a visita"),
+  isUrgent: z.boolean().optional(),
 });
 
 type TicketInput = z.infer<typeof ticketSchema>;
@@ -59,6 +61,7 @@ export function TicketForm({ equipment, initialEquipmentId }: TicketFormProps) {
       equipmentId: initialEquipmentId || "",
       reportedIssue: "",
       scheduledAt: getDefaultDate(),
+      isUrgent: false,
     },
   });
 
@@ -71,7 +74,11 @@ export function TicketForm({ equipment, initialEquipmentId }: TicketFormProps) {
   async function onSubmit(data: TicketInput) {
     setLoading(true);
     try {
-      await createTicket(data);
+      const payload: Parameters<typeof createTicket>[0] = {
+        ...data,
+        priority: data.isUrgent ? "URGENT" : "MEDIUM"
+      };
+      await createTicket(payload);
       toast.success("Seu chamado foi aberto com sucesso!", {
         description: "Nossa equipe técnica avaliará a designação o mais rápido possível."
       });
@@ -126,9 +133,19 @@ export function TicketForm({ equipment, initialEquipmentId }: TicketFormProps) {
           <FormInput
             {...register("scheduledAt")}
             type="datetime-local"
-            error={errors.scheduledAt?.message}
             required
           />
+        </div>
+
+        <div className="bg-red-50/50 border border-red-100 p-4 rounded-xl mt-4">
+          <FormCheckbox
+            {...register("isUrgent")}
+            id="isUrgent"
+            label="A máquina está totalmente inoperante (Emergência)"
+          />
+          <p className="text-xs text-red-600 mt-1 ml-6">
+            Marque esta opção apenas se o equipamento estiver 100% parado e impedindo a operação.
+          </p>
         </div>
       </div>
 

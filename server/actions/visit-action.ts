@@ -75,6 +75,7 @@ export async function createVisit(input: VisitInput) {
       technicalNotes: normalizeOptional(data.technicalNotes),
       requiresReturn: data.requiresReturn,
       returnDueDate: normalizeDateTime(data.returnDueDate),
+      priority: data.priority,
       createdByUserId: session.user.id,
     },
   });
@@ -157,6 +158,7 @@ export async function updateVisit(id: string, input: VisitInput) {
       technicalNotes: normalizeOptional(data.technicalNotes),
       requiresReturn: data.requiresReturn,
       returnDueDate: normalizeDateTime(data.returnDueDate),
+      priority: data.priority,
     },
   });
 
@@ -165,7 +167,7 @@ export async function updateVisit(id: string, input: VisitInput) {
   revalidatePath(`/visits/${id}`);
 }
 
-export async function createTicket(data: { equipmentId: string, reportedIssue: string, scheduledAt: string }) {
+export async function createTicket(data: { equipmentId: string, reportedIssue: string, scheduledAt: string, priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT" }) {
   const session = await requireAuthenticatedUser();
 
   if (!data.equipmentId || !data.reportedIssue || !data.scheduledAt) {
@@ -195,6 +197,7 @@ export async function createTicket(data: { equipmentId: string, reportedIssue: s
       scheduledAt: new Date(data.scheduledAt),
       visitType: "CORRECTIVE",
       status: "REQUESTED",
+      priority: data.priority || "MEDIUM",
       reportedIssue: data.reportedIssue,
       requiresReturn: false,
       createdByUserId: session.user.id,

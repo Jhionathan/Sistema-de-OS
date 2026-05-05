@@ -39,6 +39,13 @@ enum VisitStatus {
   PENDING_RETURN
 }
 
+enum VisitPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model User {
   id            String        @id @default(cuid())
   name          String
@@ -85,6 +92,7 @@ model Customer {
   equipment              Equipment[]
   users                  User[]
   visits                 Visit[]
+  purchases              CustomerPurchase[]
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
 
@@ -162,12 +170,14 @@ model Visit {
   technicalNotes   String?
   requiresReturn   Boolean      @default(false)
   returnDueDate    DateTime?
+  priority         VisitPriority @default(MEDIUM)
   createdByUserId  String
   equipment        Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
   customer         Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
   unit             CustomerUnit @relation(fields: [unitId], references: [id], onDelete: Restrict)
   technician       Technician?  @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   createdBy        User         @relation("VisitCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  parts            VisitPart[]
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
@@ -193,4 +203,32 @@ model ActivityLog {
   @@index([userId])
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+model CustomerPurchase {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  amount      Float?
+  notes       String?
+  purchasedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([purchasedAt])
+}
+
+model VisitPart {
+  id          String   @id @default(cuid())
+  visitId     String
+  visit       Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  name        String
+  partNumber  String?
+  quantity    Int      @default(1)
+  unitCost    Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([visitId])
 }

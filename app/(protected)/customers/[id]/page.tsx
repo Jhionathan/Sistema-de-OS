@@ -4,6 +4,7 @@ import { getCustomerById } from "@/server/queries/customer-queries";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
 import { CustomerDetailsCard } from "@/components/ui/customers/customer-details-card";
 import { CustomerUnitsList } from "@/components/ui/customers/customer-units-list";
+import { CustomerPurchasesList } from "@/components/ui/customers/customer-purchases-list";
 
 type CustomerDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -67,6 +68,8 @@ export default async function CustomerDetailPage({
           </div>
 
           <CustomerUnitsList units={customer.units} />
+          
+          <CustomerPurchasesList customerId={customer.id} purchases={customer.purchases} />
         </div>
       </div>
     </div>

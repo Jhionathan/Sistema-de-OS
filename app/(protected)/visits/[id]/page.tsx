@@ -4,6 +4,7 @@ import { getVisitById } from "@/server/queries/visit-queries";
 import { VISIT_TYPE_MAP } from "@/lib/constants";
 import { VisitDetailsCard } from "@/components/ui/visits/visit-details-card";
 import { VisitOperationalSummary } from "@/components/ui/visits/visit-operational-summary";
+import { VisitPartsList } from "@/components/ui/visits/visit-parts-list";
 
 type VisitDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -41,6 +42,8 @@ export default async function VisitDetailPage({ params }: VisitDetailPageProps) 
         <VisitDetailsCard visit={visit} />
         <VisitOperationalSummary visit={visit} />
       </div>
+
+      <VisitPartsList visitId={visit.id} parts={visit.parts} />
     </div>
   );
 }

@@ -92,6 +92,9 @@ export async function getVisitById(id: string) {
       equipment: true,
       technician: true,
       createdBy: true,
+      parts: {
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 }

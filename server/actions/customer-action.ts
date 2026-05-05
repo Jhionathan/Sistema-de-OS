@@ -68,14 +68,27 @@ export async function updateCustomer(id: string, input: CustomerInput) {
   revalidatePath(`/customers/${id}`);
 }
 
-export async function recordCustomerPurchase(id: string) {
+export async function recordCustomerPurchase(id: string, notes?: string, amount?: number, purchasedAt?: Date) {
   await requireMasterDataPermission();
-  await prisma.customer.update({
-    where: { id },
-    data: {
-      lastPurchaseDate: new Date(),
-    },
-  });
+  
+  const date = purchasedAt || new Date();
+
+  await prisma.$transaction([
+    prisma.customerPurchase.create({
+      data: {
+        customerId: id,
+        notes,
+        amount,
+        purchasedAt: date,
+      }
+    }),
+    prisma.customer.update({
+      where: { id },
+      data: {
+        lastPurchaseDate: date,
+      },
+    })
+  ]);
 
   revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);

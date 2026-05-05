@@ -56,6 +56,7 @@ export async function getDashboardStats(user?: DashboardUser) {
     nextVisits,
     visitsByStatus,
     purchaseAlerts,
+    equipmentForPreventive,
   ] = await Promise.all([
     isTechnician || isCustomer
       ? Promise.resolve(0)
@@ -188,6 +189,36 @@ export async function getDashboardStats(user?: DashboardUser) {
             purchaseFrequencyDays: true,
           },
         }),
+
+    isTechnician || isCustomer
+      ? Promise.resolve([])
+      : prisma.equipment.findMany({
+          where: {
+            status: "ACTIVE",
+            maintenanceFrequencyDays: { gt: 0 },
+            installationDate: { not: null },
+          },
+          select: {
+            id: true,
+            equipmentType: true,
+            assetTag: true,
+            brand: true,
+            installationDate: true,
+            maintenanceFrequencyDays: true,
+            customer: {
+              select: { tradeName: true, legalName: true }
+            },
+            unit: {
+              select: { name: true }
+            },
+            visits: {
+              where: { visitType: "PREVENTIVE", status: "COMPLETED" },
+              orderBy: { finishedAt: "desc" },
+              take: 1,
+              select: { finishedAt: true, scheduledAt: true }
+            }
+          }
+        }),
   ]);
 
   const statusMap: Record<string, number> = {
@@ -241,5 +272,35 @@ export async function getDashboardStats(user?: DashboardUser) {
         isCurrentMonth,
       };
     }).filter((alert) => alert.alertType !== null),
+
+    preventiveAlerts: (equipmentForPreventive as any[]).map((eq) => {
+      let baseDate = eq.installationDate;
+      if (eq.visits && eq.visits.length > 0) {
+        baseDate = eq.visits[0].finishedAt || eq.visits[0].scheduledAt;
+      }
+      
+      const lastDate = baseDate ? new Date(baseDate) : null;
+      if (!lastDate) return null;
+      
+      const frequency = Number(eq.maintenanceFrequencyDays) || 0;
+      const nextDate = new Date(lastDate.getTime() + frequency * 24 * 60 * 60 * 1000);
+      const warningDate = new Date(nextDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      let alertType: "OVERDUE" | "WARNING" | null = null;
+      if (now >= nextDate) {
+        alertType = "OVERDUE";
+      } else if (now >= warningDate) {
+        alertType = "WARNING";
+      }
+      
+      if (!alertType) return null;
+      
+      return {
+        ...eq,
+        lastMaintenanceDate: lastDate,
+        nextMaintenanceDate: nextDate,
+        alertType,
+      };
+    }).filter((alert) => alert !== null),
   };
 }

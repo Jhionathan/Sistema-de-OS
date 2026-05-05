@@ -7,6 +7,7 @@ type VisitRow = {
   scheduledAt: Date;
   visitType: string;
   status: string;
+  priority: string;
   requiresReturn: boolean;
   customer: {
     legalName: string;
@@ -56,6 +57,20 @@ const statusClassMap: Record<string, string> = {
   PENDING_RETURN: "bg-red-100 text-red-700",
 };
 
+const priorityMap: Record<string, string> = {
+  LOW: "Baixa",
+  MEDIUM: "Média",
+  HIGH: "Alta",
+  URGENT: "Urgente",
+};
+
+const priorityClassMap: Record<string, string> = {
+  LOW: "bg-slate-100 text-slate-700",
+  MEDIUM: "bg-blue-50 text-blue-700",
+  HIGH: "bg-orange-100 text-orange-700 font-bold",
+  URGENT: "bg-red-100 text-red-700 font-bold animate-pulse",
+};
+
 export function VisitsTable({ visits, userRole }: VisitsTableProps) {
   return (
     <div className="overflow-x-auto w-full rounded-2xl border bg-white shadow-sm">
@@ -70,6 +85,9 @@ export function VisitsTable({ visits, userRole }: VisitsTableProps) {
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Equipamento
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Prioridade
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Técnico
@@ -106,6 +124,16 @@ export function VisitsTable({ visits, userRole }: VisitsTableProps) {
               <td className="px-4 py-4 text-sm text-slate-600">
                 <div>{visit.equipment.equipmentType}</div>
                 <div>{visit.equipment.assetTag || "-"}</div>
+              </td>
+
+              <td className="px-4 py-4">
+                <span
+                  className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                    priorityClassMap[visit.priority] ?? "bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  {priorityMap[visit.priority] ?? visit.priority}
+                </span>
               </td>
 
               <td className="px-4 py-4 text-sm text-slate-600">
@@ -154,7 +182,7 @@ export function VisitsTable({ visits, userRole }: VisitsTableProps) {
 
           {visits.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
+              <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
                 Nenhuma visita cadastrada.
               </td>
             </tr>

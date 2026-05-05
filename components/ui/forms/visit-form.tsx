@@ -33,6 +33,13 @@ const VISIT_TYPE_OPTIONS = [
   { value: "INSPECTION", label: "Inspeção" },
 ];
 
+const PRIORITY_OPTIONS = [
+  { value: "LOW", label: "Baixa" },
+  { value: "MEDIUM", label: "Média" },
+  { value: "HIGH", label: "Alta" },
+  { value: "URGENT", label: "Urgente" },
+];
+
 const STATUS_OPTIONS = [
   { value: "REQUESTED", label: "Aberto (Triagem)" },
   { value: "SCHEDULED", label: "Agendada" },
@@ -81,8 +88,9 @@ export function VisitForm({ visit, equipment, technicians }: VisitFormProps) {
       scheduledAt: formatDateTimeForInput(visit?.scheduledAt),
       startedAt: formatDateTimeForInput(visit?.startedAt),
       finishedAt: formatDateTimeForInput(visit?.finishedAt),
-      visitType: visit?.visitType ?? "PREVENTIVE",
-      status: visit?.status ?? "SCHEDULED",
+      visitType: (visit?.visitType as VisitInput["visitType"]) ?? "PREVENTIVE",
+      status: (visit?.status as VisitInput["status"]) ?? "SCHEDULED",
+      priority: (visit?.priority as VisitInput["priority"]) ?? "MEDIUM",
       reportedIssue: visit?.reportedIssue ?? "",
       servicePerformed: visit?.servicePerformed ?? "",
       technicalNotes: visit?.technicalNotes ?? "",
@@ -264,6 +272,13 @@ export function VisitForm({ visit, equipment, technicians }: VisitFormProps) {
           label="Status"
           options={STATUS_OPTIONS}
           error={errors.status?.message}
+        />
+
+        <FormSelect
+          {...register("priority")}
+          label="Prioridade"
+          options={PRIORITY_OPTIONS}
+          error={errors.priority?.message}
         />
 
         <div className="md:col-span-2">

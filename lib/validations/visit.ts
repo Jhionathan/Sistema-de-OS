@@ -22,6 +22,12 @@ export const visitSchema = z.object({
     "CANCELED",
     "PENDING_RETURN",
   ]),
+  priority: z.enum([
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+    "URGENT",
+  ]).optional(),
   reportedIssue: z.string().optional().or(z.literal("")),
   servicePerformed: z.string().optional().or(z.literal("")),
   technicalNotes: z.string().optional().or(z.literal("")),

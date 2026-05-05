@@ -19,6 +19,8 @@ interface AdminDashboardProps {
   data: any;
 }
 
+import { PreventiveAlerts } from "@/components/ui/dashboard/preventive-alerts";
+
 export function AdminDashboard({ data }: AdminDashboardProps) {
   return (
     <>
@@ -76,6 +78,7 @@ export function AdminDashboard({ data }: AdminDashboardProps) {
         />
       </section>
 
+      <PreventiveAlerts alerts={data.preventiveAlerts} />
       <PurchaseAlerts alerts={data.purchaseAlerts} />
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">

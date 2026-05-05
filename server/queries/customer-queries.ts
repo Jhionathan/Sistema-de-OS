@@ -28,6 +28,11 @@ export async function getCustomerById(id: string) {
         },
         take: 10,
       },
+      purchases: {
+        orderBy: {
+          purchasedAt: "desc",
+        },
+      },
     },
   });
 }
