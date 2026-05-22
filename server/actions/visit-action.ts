@@ -9,6 +9,7 @@ import {
   requireVisitPermission,
   requireAuthenticatedUser,
 } from "@/lib/action-guards";
+import { logActivity } from "./activity-log-action";
 
 function normalizeOptional(value?: string) {
   if (!value) return null;
@@ -59,7 +60,7 @@ export async function createVisit(input: VisitInput) {
     }
   }
 
-  await prisma.visit.create({
+  const visit = await prisma.visit.create({
     data: {
       equipmentId: equipment.id,
       customerId: equipment.customerId,
@@ -79,6 +80,14 @@ export async function createVisit(input: VisitInput) {
       createdByUserId: session.user.id,
     },
   });
+
+  await logActivity(
+    session.user.id,
+    "VISIT",
+    visit.id,
+    "CREATE",
+    `Visita do tipo ${data.visitType} criada com status ${data.status}.`
+  );
 
   revalidatePath("/visits");
 }
@@ -162,6 +171,14 @@ export async function updateVisit(id: string, input: VisitInput) {
     },
   });
 
+  await logActivity(
+    session.user.id,
+    "VISIT",
+    id,
+    "UPDATE",
+    `Visita atualizada para o status ${data.status}.`
+  );
+
   revalidatePath("/visits");
   revalidatePath("/tickets");
   revalidatePath(`/visits/${id}`);
@@ -189,7 +206,7 @@ export async function createTicket(data: { equipmentId: string, reportedIssue: s
     }
   }
 
-  await prisma.visit.create({
+  const ticket = await prisma.visit.create({
     data: {
       equipmentId: equipment.id,
       customerId: equipment.customerId,
@@ -203,6 +220,14 @@ export async function createTicket(data: { equipmentId: string, reportedIssue: s
       createdByUserId: session.user.id,
     },
   });
+
+  await logActivity(
+    session.user.id,
+    "VISIT",
+    ticket.id,
+    "CREATE_TICKET",
+    `Ticket aberto com prioridade ${data.priority || "MEDIUM"}.`
+  );
 
   revalidatePath("/visits");
   revalidatePath("/tickets");

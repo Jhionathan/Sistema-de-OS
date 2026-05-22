@@ -1,10 +1,13 @@
 "use server";
 
+import { requireMasterDataPermission } from "@/lib/action-guards";
+import { logActivity } from "./activity-log-action";
 import { prisma } from "@/lib/prisma";
 import {
   equipmentSchema,
   type EquipmentInput,
 } from "@/lib/validations/equipment";
+import { getNextEquipmentSequentials } from "@/server/queries/equipment-queries";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -19,13 +22,10 @@ function normalizeDate(value?: string) {
   return new Date(value);
 }
 
-function normalizeFrequency(value?: string) {
-  if (!value || value.trim() === "") return null;
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? null : parsed;
-}
+
 
 export async function createEquipment(input: EquipmentInput) {
+  const session = await requireMasterDataPermission();
   const parsed = equipmentSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -34,26 +34,47 @@ export async function createEquipment(input: EquipmentInput) {
 
   const data = parsed.data;
 
-  await prisma.equipment.create({
+  let assetTag = normalizeOptional(data.assetTag);
+  let serialNumber = normalizeOptional(data.serialNumber);
+
+  if (!assetTag || !serialNumber) {
+    const sequentials = await getNextEquipmentSequentials();
+    if (!assetTag) {
+      assetTag = sequentials.nextAssetTag;
+    }
+    if (!serialNumber) {
+      serialNumber = sequentials.nextSerialNumber;
+    }
+  }
+
+  const equipment = await prisma.equipment.create({
     data: {
       customerId: data.customerId,
       unitId: data.unitId,
       equipmentType: data.equipmentType.trim(),
       brand: normalizeOptional(data.brand),
       model: normalizeOptional(data.model),
-      assetTag: normalizeOptional(data.assetTag),
-      serialNumber: normalizeOptional(data.serialNumber),
+      assetTag,
+      serialNumber,
       installationDate: normalizeDate(data.installationDate),
-      maintenanceFrequencyDays: normalizeFrequency(data.maintenanceFrequencyDays),
       status: data.status,
       notes: normalizeOptional(data.notes),
     },
   });
 
+  await logActivity(
+    session.user.id,
+    "EQUIPMENT",
+    equipment.id,
+    "CREATE",
+    `Equipamento ${equipment.equipmentType} adicionado.`
+  );
+
   revalidatePath("/equipment");
 }
 
 export async function updateEquipment(id: string, input: EquipmentInput) {
+  const session = await requireMasterDataPermission();
   const parsed = equipmentSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -73,11 +94,18 @@ export async function updateEquipment(id: string, input: EquipmentInput) {
       assetTag: normalizeOptional(data.assetTag),
       serialNumber: normalizeOptional(data.serialNumber),
       installationDate: normalizeDate(data.installationDate),
-      maintenanceFrequencyDays: normalizeFrequency(data.maintenanceFrequencyDays),
       status: data.status,
       notes: normalizeOptional(data.notes),
     },
   });
+
+  await logActivity(
+    session.user.id,
+    "EQUIPMENT",
+    id,
+    "UPDATE",
+    `Equipamento ${data.equipmentType} atualizado.`
+  );
 
   revalidatePath("/equipment");
   revalidatePath(`/equipment/${id}`);

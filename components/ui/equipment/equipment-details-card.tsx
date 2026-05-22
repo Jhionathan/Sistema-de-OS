@@ -34,14 +34,6 @@ export function EquipmentDetailsCard({ equipment }: EquipmentDetailsCardProps) {
         <Info label="Patrimônio / Tag" value={equipment.assetTag} />
         <Info label="Número de série" value={equipment.serialNumber} />
         <Info
-          label="Frequência de manutenção"
-          value={
-            equipment.maintenanceFrequencyDays
-              ? `${equipment.maintenanceFrequencyDays} dias`
-              : null
-          }
-        />
-        <Info
           label="Status"
           value={EQUIPMENT_STATUS_MAP[equipment.status] ?? equipment.status}
         />

@@ -87,6 +87,7 @@ model Customer {
   notes     String?
   isActive               Boolean        @default(true)
   purchaseFrequencyDays  Int?
+  maintenanceFrequencyDays Int?
   lastPurchaseDate       DateTime?
   units                  CustomerUnit[]
   equipment              Equipment[]
@@ -138,7 +139,6 @@ model Equipment {
   brand                    String?
   model                    String?
   installationDate         DateTime?
-  maintenanceFrequencyDays Int?
   status                   EquipmentStatus @default(ACTIVE)
   notes                    String?
   visits                   Visit[]
@@ -231,4 +231,17 @@ model VisitPart {
   updatedAt   DateTime @updatedAt
 
   @@index([visitId])
+}
+
+model SystemSetting {
+  id               String   @id @default("default")
+  companyName      String   @default("Empresa de Manutenção")
+  companyDocument  String?
+  contactEmail     String?
+  contactPhone     String?
+  slaLowHours      Int      @default(72)
+  slaMediumHours   Int      @default(48)
+  slaHighHours     Int      @default(24)
+  slaUrgentHours   Int      @default(12)
+  updatedAt        DateTime @updatedAt
 }

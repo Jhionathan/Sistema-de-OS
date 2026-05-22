@@ -72,6 +72,14 @@ export function AppSidebar({
               <SidebarNavLink href="/users" icon="users">
                 Usuários
               </SidebarNavLink>
+
+              <SidebarNavLink href="/logs" icon="logs">
+                Auditoria (Logs)
+              </SidebarNavLink>
+
+              <SidebarNavLink href="/settings" icon="settings">
+                Configurações
+              </SidebarNavLink>
             </>
           ) : null}
 

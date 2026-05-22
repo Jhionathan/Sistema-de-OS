@@ -57,6 +57,7 @@ async function main() {
       document: "12.345.678/0001-90",
       email: "contato@hospitalhelena.com",
       phone: "(62) 3322-4455",
+      maintenanceFrequencyDays: 30,
     },
   });
 
@@ -81,7 +82,6 @@ async function main() {
       assetTag: "EQ-001",
       serialNumber: "SN123456",
       status: EquipmentStatus.ACTIVE,
-      maintenanceFrequencyDays: 30,
     },
   });
 
@@ -95,7 +95,6 @@ async function main() {
       assetTag: "EQ-002",
       serialNumber: "SN987654",
       status: EquipmentStatus.ACTIVE,
-      maintenanceFrequencyDays: 60,
     },
   });
 

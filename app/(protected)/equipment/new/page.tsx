@@ -2,6 +2,7 @@ import { EquipmentForm } from "@/components/ui/forms/equipment-form";
 import {
   getCustomersForEquipmentSelect,
   getUnitsForEquipmentSelect,
+  getNextEquipmentSequentials,
 } from "@/server/queries/equipment-queries";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
 
@@ -9,9 +10,10 @@ import { requireMasterDataAccess } from "@/lib/auth-guards";
 export default async function NewEquipmentPage() {
   await requireMasterDataAccess();
   
-  const [customers, units] = await Promise.all([
+  const [customers, units, sequentials] = await Promise.all([
     getCustomersForEquipmentSelect(),
     getUnitsForEquipmentSelect(),
+    getNextEquipmentSequentials(),
   ]);
 
   return (
@@ -26,7 +28,12 @@ export default async function NewEquipmentPage() {
       </div>
 
       <div className="rounded-2xl border bg-white p-6 shadow-sm">
-        <EquipmentForm customers={customers} units={units} />
+        <EquipmentForm
+          customers={customers}
+          units={units}
+          defaultAssetTag={sequentials.nextAssetTag}
+          defaultSerialNumber={sequentials.nextSerialNumber}
+        />
       </div>
     </div>
   );

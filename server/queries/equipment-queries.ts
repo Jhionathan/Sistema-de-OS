@@ -124,3 +124,59 @@ export async function getUnitsForEquipmentSelect(customerId?: string) {
     },
   });
 }
+
+export function generateNextSequential(
+  lastValue: string | null | undefined,
+  defaultValue: string
+): string {
+  if (!lastValue) return defaultValue;
+
+  const match = lastValue.match(/^(.*?)(\d+)([^\d]*)$/);
+  if (!match) {
+    return `${lastValue}-001`;
+  }
+
+  const prefix = match[1];
+  const digitsStr = match[2];
+  const suffix = match[3];
+
+  const nextNumber = parseInt(digitsStr, 10) + 1;
+  const paddedDigits = String(nextNumber).padStart(digitsStr.length, "0");
+
+  return `${prefix}${paddedDigits}${suffix}`;
+}
+
+export async function getNextEquipmentSequentials() {
+  const latestWithAssetTag = await prisma.equipment.findFirst({
+    where: {
+      AND: [
+        { assetTag: { not: null } },
+        { assetTag: { not: "" } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    select: { assetTag: true },
+  });
+
+  const latestWithSerialNumber = await prisma.equipment.findFirst({
+    where: {
+      AND: [
+        { serialNumber: { not: null } },
+        { serialNumber: { not: "" } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    select: { serialNumber: true },
+  });
+
+  const lastAssetTag = latestWithAssetTag?.assetTag;
+  const lastSerialNumber = latestWithSerialNumber?.serialNumber;
+
+  const nextAssetTag = generateNextSequential(lastAssetTag, "EQ-001");
+  const nextSerialNumber = generateNextSequential(lastSerialNumber, "SN-001");
+
+  return {
+    nextAssetTag,
+    nextSerialNumber,
+  };
+}

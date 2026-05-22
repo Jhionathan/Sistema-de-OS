@@ -10,7 +10,6 @@ type EquipmentRow = {
   assetTag: string | null;
   serialNumber: string | null;
   status: string;
-  maintenanceFrequencyDays: number | null;
   customer: {
     legalName: string;
     tradeName: string | null;
@@ -60,9 +59,6 @@ export function EquipmentTable({ equipment, userRole }: EquipmentTableProps) {
               Identificação
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Frequência
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Status
             </th>
             <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -91,12 +87,6 @@ export function EquipmentTable({ equipment, userRole }: EquipmentTableProps) {
               <td className="px-4 py-4 text-sm text-slate-600">
                 <div>Tag: {item.assetTag || "-"}</div>
                 <div>S/N: {item.serialNumber || "-"}</div>
-              </td>
-
-              <td className="px-4 py-4 text-sm text-slate-600">
-                {item.maintenanceFrequencyDays
-                  ? `${item.maintenanceFrequencyDays} dias`
-                  : "-"}
               </td>
 
               <td className="px-4 py-4">
@@ -133,7 +123,7 @@ export function EquipmentTable({ equipment, userRole }: EquipmentTableProps) {
 
           {equipment.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
+              <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-500">
                 Nenhum equipamento cadastrado.
               </td>
             </tr>

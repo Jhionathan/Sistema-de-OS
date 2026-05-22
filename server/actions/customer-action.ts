@@ -1,5 +1,6 @@
 "use server";
 import { requireMasterDataPermission } from "@/lib/action-guards";
+import { logActivity } from "./activity-log-action";
 import { prisma } from "@/lib/prisma";
 import { customerSchema, type CustomerInput } from "@/lib/validations/customer";
 import { revalidatePath } from "next/cache";
@@ -12,7 +13,7 @@ function normalizeOptional(value?: string) {
 }
 
 export async function createCustomer(input: CustomerInput) {
-  await requireMasterDataPermission();
+  const session = await requireMasterDataPermission();
   const parsed = customerSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -21,7 +22,7 @@ export async function createCustomer(input: CustomerInput) {
 
   const data = parsed.data;
 
-  await prisma.customer.create({
+  const customer = await prisma.customer.create({
     data: {
       legalName: data.legalName.trim(),
       tradeName: normalizeOptional(data.tradeName),
@@ -30,16 +31,25 @@ export async function createCustomer(input: CustomerInput) {
       phone: normalizeOptional(data.phone),
       notes: normalizeOptional(data.notes),
       purchaseFrequencyDays: data.purchaseFrequencyDays,
+      maintenanceFrequencyDays: data.maintenanceFrequencyDays,
       lastPurchaseDate: data.lastPurchaseDate,
       isActive: data.isActive,
     },
   });
 
+  await logActivity(
+    session.user.id,
+    "CUSTOMER",
+    customer.id,
+    "CREATE",
+    `Cliente ${customer.legalName} criado.`
+  );
+
   revalidatePath("/customers");
 }
 
 export async function updateCustomer(id: string, input: CustomerInput) {
-  await requireMasterDataPermission();
+  const session = await requireMasterDataPermission();
   const parsed = customerSchema.safeParse(input);
 
 
@@ -59,17 +69,26 @@ export async function updateCustomer(id: string, input: CustomerInput) {
       phone: normalizeOptional(data.phone),
       notes: normalizeOptional(data.notes),
       purchaseFrequencyDays: data.purchaseFrequencyDays,
+      maintenanceFrequencyDays: data.maintenanceFrequencyDays,
       lastPurchaseDate: data.lastPurchaseDate,
       isActive: data.isActive,
     },
   });
+
+  await logActivity(
+    session.user.id,
+    "CUSTOMER",
+    id,
+    "UPDATE",
+    `Cliente ${data.legalName} atualizado.`
+  );
 
   revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);
 }
 
 export async function recordCustomerPurchase(id: string, notes?: string, amount?: number, purchasedAt?: Date) {
-  await requireMasterDataPermission();
+  const session = await requireMasterDataPermission();
   
   const date = purchasedAt || new Date();
 
@@ -90,19 +109,35 @@ export async function recordCustomerPurchase(id: string, notes?: string, amount?
     })
   ]);
 
+  await logActivity(
+    session.user.id,
+    "CUSTOMER",
+    id,
+    "CREATE_PURCHASE",
+    `Compra registrada no valor de ${amount || 'N/A'}.`
+  );
+
   revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);
   revalidatePath("/dashboard");
 }
     
 export async function toggleCustomerStatus(id: string, isActive: boolean) {
-  await requireMasterDataPermission();
+  const session = await requireMasterDataPermission();
   await prisma.customer.update({
     where: { id },
     data: {
       isActive,
     },
   });
+
+  await logActivity(
+    session.user.id,
+    "CUSTOMER",
+    id,
+    "TOGGLE_STATUS",
+    `Status alterado para ${isActive ? 'Ativo' : 'Inativo'}.`
+  );
 
   revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);

@@ -19,6 +19,8 @@ type EquipmentFormProps = {
   equipment?: Equipment | null;
   customers: Pick<Customer, "id" | "legalName" | "tradeName">[];
   units: Pick<CustomerUnit, "id" | "name" | "customerId">[];
+  defaultAssetTag?: string;
+  defaultSerialNumber?: string;
 };
 
 const STATUS_OPTIONS = [
@@ -50,6 +52,8 @@ export function EquipmentForm({
   equipment,
   customers,
   units,
+  defaultAssetTag,
+  defaultSerialNumber,
 }: EquipmentFormProps) {
   const router = useRouter();
   const {
@@ -65,10 +69,9 @@ export function EquipmentForm({
       equipmentType: equipment?.equipmentType ?? "",
       brand: equipment?.brand ?? "",
       model: equipment?.model ?? "",
-      assetTag: equipment?.assetTag ?? "",
-      serialNumber: equipment?.serialNumber ?? "",
+      assetTag: equipment ? (equipment.assetTag ?? "") : (defaultAssetTag ?? ""),
+      serialNumber: equipment ? (equipment.serialNumber ?? "") : (defaultSerialNumber ?? ""),
       installationDate: formatDateForInput(equipment?.installationDate),
-      maintenanceFrequencyDays: equipment?.maintenanceFrequencyDays?.toString() ?? "",
       status: equipment?.status ?? "ACTIVE",
       notes: equipment?.notes ?? "",
     },
@@ -159,13 +162,7 @@ export function EquipmentForm({
           error={errors.installationDate?.message}
         />
 
-        <FormInput
-          {...register("maintenanceFrequencyDays")}
-          type="number"
-          label="Frequência de manutenção (dias)"
-          placeholder="30"
-          error={errors.maintenanceFrequencyDays?.message}
-        />
+
 
         <FormSelect
           {...register("status")}

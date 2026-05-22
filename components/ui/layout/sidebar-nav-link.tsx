@@ -11,6 +11,8 @@ import {
   UserCog,
   Shield,
   LifeBuoy,
+  Activity,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +24,9 @@ type IconName =
   | "visits"
   | "technicians"
   | "users"
-  | "ticket";
+  | "ticket"
+  | "logs"
+  | "settings";
 
 type SidebarNavLinkProps = {
   href: string;
@@ -39,6 +43,8 @@ const iconMap = {
   technicians: UserCog,
   users: Shield,
   ticket: LifeBuoy,
+  logs: Activity,
+  settings: Settings,
 };
 
 export function SidebarNavLink({

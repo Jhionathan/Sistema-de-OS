@@ -9,7 +9,6 @@ export const equipmentSchema = z.object({
   assetTag: z.string().optional().or(z.literal("")),
   serialNumber: z.string().optional().or(z.literal("")),
   installationDate: z.string().optional().or(z.literal("")),
-  maintenanceFrequencyDays: z.string().optional().or(z.literal("")),
   status: z.enum([
     "ACTIVE",
     "IN_MAINTENANCE",

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireVisitPermission } from "@/lib/action-guards";
+import { logActivity } from "./activity-log-action";
 import { z } from "zod";
 
 const addPartSchema = z.object({
@@ -14,7 +15,7 @@ const addPartSchema = z.object({
 });
 
 export async function addVisitPart(input: unknown) {
-  await requireVisitPermission();
+  const session = await requireVisitPermission();
 
   const parsed = addPartSchema.safeParse(input);
   if (!parsed.success) {
@@ -36,13 +37,31 @@ export async function addVisitPart(input: unknown) {
     },
   });
 
+  await logActivity(
+    session.user.id,
+    "VISIT_PART",
+    visitId,
+    "ADD_PART",
+    `Peça ${name} (Qtd: ${quantity}) adicionada à visita.`
+  );
+
   revalidatePath(`/visits/${visitId}`);
 }
 
 export async function removeVisitPart(partId: string, visitId: string) {
-  await requireVisitPermission();
+  const session = await requireVisitPermission();
 
-  await prisma.visitPart.delete({ where: { id: partId } });
+  const part = await prisma.visitPart.findUnique({ where: { id: partId } });
+  if (part) {
+    await prisma.visitPart.delete({ where: { id: partId } });
+    await logActivity(
+      session.user.id,
+      "VISIT_PART",
+      visitId,
+      "REMOVE_PART",
+      `Peça ${part.name} removida da visita.`
+    );
+  }
 
   revalidatePath(`/visits/${visitId}`);
 }

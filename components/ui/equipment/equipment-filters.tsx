@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { Search, X, SlidersHorizontal } from "lucide-react";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { Search, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
 type CustomerOption = {
@@ -21,15 +21,47 @@ export function EquipmentFilters({ customers, userRole }: EquipmentFiltersProps)
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [search, setSearch] = useState(searchParams.get("query") || "");
-  const [customerId, setCustomerId] = useState(searchParams.get("customerId") || "");
-  const [status, setStatus] = useState(searchParams.get("status") || "");
-  
+  const [search, setSearch] = useState("");
+  const [customerId, setCustomerId] = useState("");
+  const [status, setStatus] = useState("");
+
   const debouncedSearch = useDebounce(search, 500);
 
-  const createQueryString = useCallback(
+  // Keep searchParams fresh in a ref to avoid stale closures in effects and helper functions
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+
+  const urlQuery = searchParams.get("query") || "";
+  const urlCustomerId = searchParams.get("customerId") || "";
+  const urlStatus = searchParams.get("status") || "";
+
+  const [prevUrlQuery, setPrevUrlQuery] = useState("");
+  const [prevUrlCustomerId, setPrevUrlCustomerId] = useState("");
+  const [prevUrlStatus, setPrevUrlStatus] = useState("");
+
+  // Synchronize local states during render to avoid cascading useEffect transitions
+  if (urlQuery !== prevUrlQuery) {
+    setPrevUrlQuery(urlQuery);
+    if (urlQuery !== debouncedSearch) {
+      setSearch(urlQuery);
+    }
+  }
+
+  if (urlCustomerId !== prevUrlCustomerId) {
+    setPrevUrlCustomerId(urlCustomerId);
+    setCustomerId(urlCustomerId);
+  }
+
+  if (urlStatus !== prevUrlStatus) {
+    setPrevUrlStatus(urlStatus);
+    setStatus(urlStatus);
+  }
+
+  const getQueryString = useCallback(
     (params: Record<string, string | null>) => {
-      const newSearchParams = new URLSearchParams(searchParams.toString());
+      const newSearchParams = new URLSearchParams(searchParamsRef.current.toString());
 
       Object.entries(params).forEach(([key, value]) => {
         if (value === null || value === "") {
@@ -44,21 +76,23 @@ export function EquipmentFilters({ customers, userRole }: EquipmentFiltersProps)
 
       return newSearchParams.toString();
     },
-    [searchParams]
+    []
   );
 
+  // Push search updates to the URL when debounced search value changes
   useEffect(() => {
-    const query = createQueryString({ query: debouncedSearch });
-    if (query !== searchParams.toString()) {
+    const currentQuery = searchParamsRef.current.get("query") || "";
+    if (debouncedSearch !== currentQuery) {
+      const query = getQueryString({ query: debouncedSearch });
       router.push(`${pathname}?${query}`);
     }
-  }, [debouncedSearch, pathname, router, createQueryString, searchParams]);
+  }, [debouncedSearch, pathname, router, getQueryString]);
 
   const handleFilterChange = (name: string, value: string) => {
     if (name === "customerId") setCustomerId(value);
     if (name === "status") setStatus(value);
 
-    const query = createQueryString({ [name]: value });
+    const query = getQueryString({ [name]: value });
     router.push(`${pathname}?${query}`);
   };
 

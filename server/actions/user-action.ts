@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createUserSchema, updateUserSchema, changePasswordSchema, type CreateUserInput, type UpdateUserInput, type ChangePasswordInput } from "@/lib/validations/user";
 import { revalidatePath } from "next/cache";
 import { requireAuth, requireMasterDataAccess } from "@/lib/auth-guards";
+import { logActivity } from "./activity-log-action";
 import bcrypt from "bcryptjs";
 
 function getPermissionError(currentUserRole: string, targetRole: string) {
@@ -61,6 +62,14 @@ export async function createUser(input: CreateUserInput) {
       },
     });
   }
+
+  await logActivity(
+    session.user.id,
+    "USER",
+    newUser.id,
+    "CREATE",
+    `Usuário ${newUser.name} (${newUser.email}) criado.`
+  );
 
   revalidatePath("/users");
 }
@@ -148,6 +157,14 @@ export async function updateUser(id: string, input: UpdateUserInput) {
     });
   }
 
+  await logActivity(
+    session.user.id,
+    "USER",
+    id,
+    "UPDATE",
+    `Usuário ${updatedUser.name} (${updatedUser.email}) atualizado.`
+  );
+
   revalidatePath("/users");
 }
 
@@ -180,6 +197,14 @@ export async function updateOwnPassword(input: ChangePasswordInput) {
     where: { id: user.id },
     data: { passwordHash: newHash },
   });
+
+  await logActivity(
+    session.user.id,
+    "USER",
+    user.id,
+    "UPDATE_PASSWORD",
+    "Senha alterada com sucesso."
+  );
 
   revalidatePath("/profile");
 }

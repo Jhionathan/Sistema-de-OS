@@ -34,6 +34,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
       notes: customer?.notes ?? "",
       isActive: customer?.isActive ?? true,
       purchaseFrequencyDays: customer?.purchaseFrequencyDays ?? "",
+      maintenanceFrequencyDays: customer?.maintenanceFrequencyDays ?? "",
       lastPurchaseDate: customer?.lastPurchaseDate ? new Date(customer.lastPurchaseDate).toISOString().split('T')[0] : "",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
@@ -120,6 +121,14 @@ export function CustomerForm({ customer }: CustomerFormProps) {
           label="Frequência de compra (dias)"
           placeholder="Ex: 30"
           error={errors.purchaseFrequencyDays?.message}
+        />
+
+        <FormInput
+          {...register("maintenanceFrequencyDays")}
+          type="number"
+          label="Frequência de manutenção prev. (dias)"
+          placeholder="Ex: 30"
+          error={errors.maintenanceFrequencyDays?.message}
         />
 
         <FormInput

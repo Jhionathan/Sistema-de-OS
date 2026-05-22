@@ -9,6 +9,7 @@ export const customerSchema = z.object({
   notes: z.string().optional().or(z.literal("")),
   isActive: z.boolean(),
   purchaseFrequencyDays: z.coerce.number().int().min(0).optional().nullable(),
+  maintenanceFrequencyDays: z.coerce.number().int().min(0).optional().nullable(),
   lastPurchaseDate: z.coerce.date().optional().nullable(),
 });
 

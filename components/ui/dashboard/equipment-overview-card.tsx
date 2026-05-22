@@ -2,7 +2,6 @@ type EquipmentItem = {
   id: string;
   equipmentType: string;
   assetTag: string | null;
-  maintenanceFrequencyDays: number | null;
   customer: {
     tradeName: string | null;
     legalName: string;
@@ -40,13 +39,6 @@ export function EquipmentOverviewCard({
 
               <p className="mt-1 text-sm text-slate-600">
                 {item.customer.tradeName ?? item.customer.legalName}
-              </p>
-
-              <p className="mt-2 text-xs text-slate-500">
-                Frequência de manutenção:{" "}
-                {item.maintenanceFrequencyDays
-                  ? `${item.maintenanceFrequencyDays} dias`
-                  : "não informada"}
               </p>
             </div>
           ))

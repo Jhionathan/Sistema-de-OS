@@ -56,7 +56,7 @@ export async function getDashboardStats(user?: DashboardUser) {
     nextVisits,
     visitsByStatus,
     purchaseAlerts,
-    equipmentForPreventive,
+    customersForPreventive,
   ] = await Promise.all([
     isTechnician || isCustomer
       ? Promise.resolve(0)
@@ -192,25 +192,17 @@ export async function getDashboardStats(user?: DashboardUser) {
 
     isTechnician || isCustomer
       ? Promise.resolve([])
-      : prisma.equipment.findMany({
+      : prisma.customer.findMany({
           where: {
-            status: "ACTIVE",
+            isActive: true,
             maintenanceFrequencyDays: { gt: 0 },
-            installationDate: { not: null },
           },
           select: {
             id: true,
-            equipmentType: true,
-            assetTag: true,
-            brand: true,
-            installationDate: true,
+            legalName: true,
+            tradeName: true,
             maintenanceFrequencyDays: true,
-            customer: {
-              select: { tradeName: true, legalName: true }
-            },
-            unit: {
-              select: { name: true }
-            },
+            createdAt: true,
             visits: {
               where: { visitType: "PREVENTIVE", status: "COMPLETED" },
               orderBy: { finishedAt: "desc" },
@@ -273,16 +265,16 @@ export async function getDashboardStats(user?: DashboardUser) {
       };
     }).filter((alert) => alert.alertType !== null),
 
-    preventiveAlerts: (equipmentForPreventive as any[]).map((eq) => {
-      let baseDate = eq.installationDate;
-      if (eq.visits && eq.visits.length > 0) {
-        baseDate = eq.visits[0].finishedAt || eq.visits[0].scheduledAt;
+    preventiveAlerts: (customersForPreventive as any[]).map((customer) => {
+      let baseDate = customer.createdAt;
+      if (customer.visits && customer.visits.length > 0) {
+        baseDate = customer.visits[0].finishedAt || customer.visits[0].scheduledAt;
       }
       
       const lastDate = baseDate ? new Date(baseDate) : null;
       if (!lastDate) return null;
       
-      const frequency = Number(eq.maintenanceFrequencyDays) || 0;
+      const frequency = Number(customer.maintenanceFrequencyDays) || 0;
       const nextDate = new Date(lastDate.getTime() + frequency * 24 * 60 * 60 * 1000);
       const warningDate = new Date(nextDate.getTime() - 7 * 24 * 60 * 60 * 1000);
       
@@ -296,7 +288,12 @@ export async function getDashboardStats(user?: DashboardUser) {
       if (!alertType) return null;
       
       return {
-        ...eq,
+        id: customer.id,
+        customer: {
+          id: customer.id,
+          legalName: customer.legalName,
+          tradeName: customer.tradeName,
+        },
         lastMaintenanceDate: lastDate,
         nextMaintenanceDate: nextDate,
         alertType,
