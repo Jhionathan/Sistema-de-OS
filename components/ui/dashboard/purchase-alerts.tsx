@@ -1,9 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ShoppingCart, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { ShoppingCart, CheckCircle2, AlertTriangle, Clock, X } from "lucide-react";
 import { recordCustomerPurchase } from "@/server/actions/customer-action";
 import { toast } from "sonner";
 
@@ -24,12 +24,41 @@ type PurchaseAlertsProps = {
 
 export function PurchaseAlerts({ alerts }: PurchaseAlertsProps) {
   const [isPending, startTransition] = useTransition();
+  const [selectedAlert, setSelectedAlert] = useState<PurchaseAlert | null>(null);
+  const [purchaseDate, setPurchaseDate] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [amount, setAmount] = useState<string>("");
 
-  const handleRecordPurchase = (id: string) => {
+  const getTodayDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const openRegisterModal = (alert: PurchaseAlert) => {
+    setSelectedAlert(alert);
+    setPurchaseDate(getTodayDateString());
+    setNotes("");
+    setAmount("");
+  };
+
+  const handleRecordPurchase = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAlert) return;
+
     startTransition(async () => {
       try {
-        await recordCustomerPurchase(id);
-        toast.success("Compra do mês registrada com sucesso");
+        const [year, month, day] = purchaseDate.split("-").map(Number);
+        const dateObj = new Date(year, month - 1, day, 12, 0, 0);
+
+        const parsedAmount = amount ? parseFloat(amount) : undefined;
+        const parsedNotes = notes.trim() || undefined;
+
+        await recordCustomerPurchase(selectedAlert.id, parsedNotes, parsedAmount, dateObj);
+        toast.success("Compra registrada com sucesso");
+        setSelectedAlert(null);
       } catch (error) {
         toast.error("Erro ao registrar compra");
       }
@@ -100,7 +129,7 @@ export function PurchaseAlerts({ alerts }: PurchaseAlertsProps) {
                 </td>
                 <td className="px-6 py-4 text-right">
                   <button
-                    onClick={() => handleRecordPurchase(alert.id)}
+                    onClick={() => openRegisterModal(alert)}
                     disabled={isPending}
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50"
                   >
@@ -113,6 +142,85 @@ export function PurchaseAlerts({ alerts }: PurchaseAlertsProps) {
           </tbody>
         </table>
       </div>
+
+      {selectedAlert && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-slate-600" />
+                <h3 className="text-base font-semibold text-slate-900">Registrar Compra</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAlert(null)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRecordPurchase} className="p-6 space-y-4 text-left">
+              <div>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cliente</span>
+                <p className="font-medium text-slate-900 mt-0.5">
+                  {selectedAlert.tradeName || selectedAlert.legalName}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-slate-700">Data da Compra</label>
+                <input
+                  type="date"
+                  required
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm transition-colors focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-slate-700">Valor (Opcional)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Ex.: 150.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm transition-colors focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-slate-700">Observações (Opcional)</label>
+                <textarea
+                  placeholder="Ex.: Compra da cota mensal"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm transition-colors focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 min-h-[80px]"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAlert(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-sm font-medium text-white hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isPending ? "Registrando..." : "Confirmar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
