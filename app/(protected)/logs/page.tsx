@@ -5,6 +5,11 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { canManageMasterData } from "@/lib/permissions";
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
+
+type LogWithUser = Prisma.ActivityLogGetPayload<{
+  include: { user: { select: { name: true; email: true } } };
+}>;
 
 export default async function LogsPage({
   searchParams,
@@ -50,7 +55,7 @@ export default async function LogsPage({
                 </tr>
               </thead>
               <tbody className="[&_tr:last-child]:border-0">
-                {logs.map((log) => (
+                {logs.map((log: LogWithUser) => (
                   <tr key={log.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                     <td className="p-2 align-middle whitespace-nowrap">
                       {format(new Date(log.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
