@@ -5,11 +5,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { canManageMasterData } from "@/lib/permissions";
 import Link from "next/link";
-import { Prisma } from "@prisma/client";
-
-type LogWithUser = Prisma.ActivityLogGetPayload<{
-  include: { user: { select: { name: true; email: true } } };
-}>;
+type LogWithUser = Awaited<ReturnType<typeof getActivityLogs>>["logs"][number];
 
 export default async function LogsPage({
   searchParams,
