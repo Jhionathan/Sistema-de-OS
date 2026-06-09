@@ -13,10 +13,10 @@ export function CustomerDashboard({ data }: CustomerDashboardProps) {
   return (
     <>
       <section className="grid gap-4 md:grid-cols-3">
-        <div className="md:col-span-3 lg:col-span-1 rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground shadow-lg shadow-primary/20 flex flex-col justify-between relative overflow-hidden">
+        <div className="md:col-span-3 lg:col-span-1 rounded-2xl bg-linear-to-br from-primary to-primary/80 p-6 text-primary-foreground shadow-lg shadow-primary/20 flex flex-col justify-between relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-xl font-bold font-heading mb-2">Precisa de Ajuda?</h2>
-            <p className="text-primary-foreground/80 text-sm mb-6 max-w-[250px]">
+            <p className="text-primary-foreground/80 text-sm mb-6 max-w-62.5">
               Sua máquina parou ou apresenta defeito? Abra um chamado técnico agora mesmo.
             </p>
             <Link 

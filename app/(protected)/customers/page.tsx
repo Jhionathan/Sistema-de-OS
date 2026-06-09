@@ -1,11 +1,28 @@
 import Link from "next/link";
 import { getCustomers } from "@/server/queries/customer-queries";
 import { CustomersTable } from "@/components/ui/tables/customers-table";
+import { CustomersFilters } from "@/components/ui/customers/customers-filters";
+import { Pagination } from "@/components/ui/shared/pagination";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
 
-export default async function CustomersPage() {
+interface CustomersPageProps {
+  searchParams: Promise<{
+    query?: string;
+    status?: string;
+    page?: string;
+  }>;
+}
+
+export default async function CustomersPage({ searchParams }: CustomersPageProps) {
   await requireMasterDataAccess();
-  const customers = await getCustomers();
+  const params = await searchParams;
+
+  const query = params.query || "";
+  const status = params.status || "";
+  const page = Number(params.page) || 1;
+  const pageSize = 15;
+
+  const { customers, total } = await getCustomers({ search: query, status, page, pageSize });
 
   return (
     <div className="space-y-6">
@@ -27,7 +44,12 @@ export default async function CustomersPage() {
         </Link>
       </div>
 
-      <CustomersTable customers={customers} />
+      <CustomersFilters />
+
+      <div className="space-y-4">
+        <CustomersTable customers={customers} />
+        <Pagination totalItems={total} pageSize={pageSize} currentPage={page} />
+      </div>
     </div>
   );
 }

@@ -1,14 +1,26 @@
 import Link from "next/link";
 import { getUnits } from "@/server/queries/unit-queries";
 import { UnitsTable } from "@/components/ui/tables/units-table";
+import { UnitsFilters } from "@/components/ui/units/units-filters";
+import { Pagination } from "@/components/ui/shared/pagination";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
 
+interface UnitsPageProps {
+  searchParams: Promise<{
+    query?: string;
+    page?: string;
+  }>;
+}
 
-
-export default async function UnitsPage() {
+export default async function UnitsPage({ searchParams }: UnitsPageProps) {
   await requireMasterDataAccess();
-  
-  const units = await getUnits();
+  const params = await searchParams;
+
+  const query = params.query || "";
+  const page = Number(params.page) || 1;
+  const pageSize = 15;
+
+  const { units, total } = await getUnits({ search: query, page, pageSize });
 
   return (
     <div className="space-y-6">
@@ -30,7 +42,12 @@ export default async function UnitsPage() {
         </Link>
       </div>
 
-      <UnitsTable units={units} />
+      <UnitsFilters />
+
+      <div className="space-y-4">
+        <UnitsTable units={units} />
+        <Pagination totalItems={total} pageSize={pageSize} currentPage={page} />
+      </div>
     </div>
   );
 }
