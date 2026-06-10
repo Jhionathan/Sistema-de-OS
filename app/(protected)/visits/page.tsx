@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   getCustomersForVisitFilter,
   getTechniciansForVisitSelect,
@@ -6,23 +7,28 @@ import {
 } from "@/server/queries/visit-queries";
 import { VisitsTable } from "@/components/ui/tables/visits-table";
 import { VisitsFilters } from "@/components/ui/forms/visits-filters";
+import { VisitsKanban } from "@/components/ui/visits/visits-kanban";
+import { ViewToggle } from "@/components/ui/visits/view-toggle";
 import { requireOperationalAccess } from "@/lib/auth-guards";
 import { isCustomer } from "@/lib/permissions";
 
 type VisitsPageProps = {
   searchParams: Promise<{
-    status?: string;  
+    status?: string;
     visitType?: string;
     technicianId?: string;
     customerId?: string;
     dateFrom?: string;
     dateTo?: string;
+    view?: string;
   }>;
 };
 
 export default async function VisitsPage({ searchParams }: VisitsPageProps) {
   const session = await requireOperationalAccess();
   const filters = await searchParams;
+
+  const isKanban = filters.view === "kanban" && !isCustomer(session.user.role);
 
   const [visits, technicians, customers] = await Promise.all([
     getVisits(filters, session.user),
@@ -38,32 +44,46 @@ export default async function VisitsPage({ searchParams }: VisitsPageProps) {
             {isCustomer(session.user.role) ? "Minhas Visitas" : "Visitas"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            {isCustomer(session.user.role) ? "Acompanhe os históricos técnicos em sua empresa." : "Gerencie os atendimentos técnicos do sistema."}
+            {isCustomer(session.user.role)
+              ? "Acompanhe os históricos técnicos em sua empresa."
+              : "Gerencie os atendimentos técnicos do sistema."}
           </p>
         </div>
 
-        {!isCustomer(session.user.role) ? (
-          <Link
-            href="/visits/new"
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
-          >
-            Nova visita
-          </Link>
-        ) : (
-          <Link
-            href="/tickets/new"
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-md shadow-primary/20 hover:bg-primary/90 transition-colors"
-          >
-            Abrir Chamado
-          </Link>
-        )}
+        <div className="flex items-center gap-3 flex-wrap">
+          {!isCustomer(session.user.role) && (
+            <Suspense>
+              <ViewToggle currentView={isKanban ? "kanban" : "table"} />
+            </Suspense>
+          )}
+
+          {!isCustomer(session.user.role) ? (
+            <Link
+              href="/visits/new"
+              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
+            >
+              Nova visita
+            </Link>
+          ) : (
+            <Link
+              href="/tickets/new"
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-md shadow-primary/20 hover:bg-primary/90 transition-colors"
+            >
+              Abrir Chamado
+            </Link>
+          )}
+        </div>
       </div>
 
-      {!isCustomer(session.user.role) && (
+      {!isCustomer(session.user.role) && !isKanban && (
         <VisitsFilters technicians={technicians} customers={customers} />
       )}
 
-      <VisitsTable visits={visits} userRole={session.user.role} />
+      {isKanban ? (
+        <VisitsKanban visits={visits} userRole={session.user.role} />
+      ) : (
+        <VisitsTable visits={visits} userRole={session.user.role} />
+      )}
     </div>
   );
 }

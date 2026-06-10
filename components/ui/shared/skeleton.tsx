@@ -41,7 +41,7 @@ export function TablePageSkeleton({ rows = 8, hasFilters = false }: { rows?: num
           {Array.from({ length: rows }).map((_, i) => (
             <div key={i} className="grid grid-cols-4 gap-4 px-4 py-4 border-b border-slate-100 last:border-0">
               {Array.from({ length: 4 }).map((_, j) => (
-                <Skeleton key={j} className="h-4" style={{ width: `${60 + Math.random() * 40}%` }} />
+                <Skeleton key={j} className={j % 2 === 0 ? "h-4 w-4/5" : "h-4 w-3/5"} />
               ))}
             </div>
           ))}
