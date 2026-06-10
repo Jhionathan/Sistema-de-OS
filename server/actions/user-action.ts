@@ -168,6 +168,34 @@ export async function updateUser(id: string, input: UpdateUserInput) {
   revalidatePath("/users");
 }
 
+export async function adminResetPassword(userId: string, newPassword: string) {
+  const session = await requireMasterDataAccess();
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("A nova senha deve ter no mínimo 6 caracteres.");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error("Usuário não encontrado.");
+
+  if (session.user.role === "MANAGER" && (user.role === "ADMIN" || user.role === "MANAGER")) {
+    throw new Error("Gestores não têm permissão para redefinir a senha de Administradores ou outros Gestores.");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+  await logActivity(
+    session.user.id,
+    "USER",
+    userId,
+    "RESET_PASSWORD",
+    `Senha do usuário ${user.name} redefinida pelo administrador.`
+  );
+
+  revalidatePath(`/users/${userId}`);
+}
+
 export async function updateOwnPassword(input: ChangePasswordInput) {
   const session = await requireAuth();
   

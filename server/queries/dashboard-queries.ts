@@ -57,6 +57,7 @@ export async function getDashboardStats(user?: DashboardUser) {
     visitsByStatus,
     purchaseAlerts,
     customersForPreventive,
+    todayVisitsList,
   ] = await Promise.all([
     isTechnician || isCustomer
       ? Promise.resolve(0)
@@ -190,6 +191,22 @@ export async function getDashboardStats(user?: DashboardUser) {
           },
         }),
 
+    isTechnician
+      ? prisma.visit.findMany({
+          where: {
+            ...baseFilters,
+            scheduledAt: { gte: startOfToday, lte: endOfToday },
+            status: { in: ["SCHEDULED", "IN_PROGRESS"] },
+          },
+          orderBy: { scheduledAt: "asc" },
+          include: {
+            customer: { select: { legalName: true, tradeName: true } },
+            unit: { select: { name: true, city: true } },
+            equipment: { select: { equipmentType: true, assetTag: true } },
+          },
+        })
+      : Promise.resolve([]),
+
     isTechnician || isCustomer
       ? Promise.resolve([])
       : prisma.customer.findMany({
@@ -265,6 +282,7 @@ export async function getDashboardStats(user?: DashboardUser) {
       };
     }).filter((alert) => alert.alertType !== null),
 
+    todayVisitsList,
     preventiveAlerts: (customersForPreventive as any[]).map((customer) => {
       let baseDate = customer.createdAt;
       if (customer.visits && customer.visits.length > 0) {

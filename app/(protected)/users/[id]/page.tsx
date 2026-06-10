@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getUserById } from "@/server/queries/user-queries";
 import { UserForm } from "@/components/ui/forms/user-form";
+import { AdminResetPasswordForm } from "@/components/ui/users/admin-reset-password-form";
 import { requireMasterDataAccess } from "@/lib/auth-guards";
 import { getCustomersForEquipmentSelect, getUnitsForEquipmentSelect } from "@/server/queries/equipment-queries";
 
@@ -11,7 +12,7 @@ export default async function EditUserPage({
 }) {
   await requireMasterDataAccess();
   const { id } = await params;
-  
+
   const [user, customers, units] = await Promise.all([
     getUserById(id),
     getCustomersForEquipmentSelect(),
@@ -36,6 +37,8 @@ export default async function EditUserPage({
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <UserForm user={user} customers={customers} units={units} />
       </div>
+
+      <AdminResetPasswordForm userId={user.id} />
     </div>
   );
 }

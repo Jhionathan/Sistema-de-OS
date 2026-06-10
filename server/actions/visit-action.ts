@@ -184,6 +184,45 @@ export async function updateVisit(id: string, input: VisitInput) {
   revalidatePath(`/visits/${id}`);
 }
 
+export async function quickUpdateVisitStatus(
+  visitId: string,
+  newStatus: "IN_PROGRESS" | "COMPLETED"
+) {
+  const session = await requireAuthenticatedUser();
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    include: { technician: { select: { userId: true } } },
+  });
+
+  if (!visit) throw new Error("Visita não encontrada.");
+
+  if (
+    session.user.role === "TECHNICIAN" &&
+    visit.technician?.userId !== session.user.id
+  ) {
+    throw new Error("Você não tem permissão para atualizar esta visita.");
+  }
+
+  const updateData: Record<string, unknown> = { status: newStatus };
+  if (newStatus === "IN_PROGRESS") updateData.startedAt = new Date();
+  if (newStatus === "COMPLETED") updateData.finishedAt = new Date();
+
+  await prisma.visit.update({ where: { id: visitId }, data: updateData });
+
+  await logActivity(
+    session.user.id,
+    "VISIT",
+    visitId,
+    "STATUS_UPDATE",
+    `Status atualizado para ${newStatus}.`
+  );
+
+  revalidatePath("/dashboard");
+  revalidatePath("/visits");
+  revalidatePath(`/visits/${visitId}`);
+}
+
 export async function createTicket(data: { equipmentId: string, reportedIssue: string, scheduledAt: string, priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT" }) {
   const session = await requireAuthenticatedUser();
 

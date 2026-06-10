@@ -1,13 +1,13 @@
 import { StatsCard } from "@/components/ui/dashboard/stats-cards";
 import { RecentVisitsCard } from "@/components/ui/dashboard/recent-visits-card";
-import { NextVisitsCard } from "@/components/ui/dashboard/next-visits-card";
 import { OperationalAlertsCard } from "@/components/ui/dashboard/operational-alerts-card";
 import { VisitsStatusCard } from "@/components/ui/dashboard/visits-status-card";
-import { 
-  CalendarCheck, 
-  RotateCcw, 
-  ClockAlert, 
-  CheckCircle2
+import { TechnicianTodayVisits } from "@/components/ui/dashboard/technician-today-visits";
+import {
+  CalendarCheck,
+  RotateCcw,
+  ClockAlert,
+  CheckCircle2,
 } from "lucide-react";
 
 interface TechnicianDashboardProps {
@@ -44,6 +44,8 @@ export function TechnicianDashboard({ data }: TechnicianDashboardProps) {
         />
       </section>
 
+      <TechnicianTodayVisits visits={data.todayVisitsList ?? []} />
+
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <VisitsStatusCard visitsByStatus={data.visitsByStatus} />
         <OperationalAlertsCard
@@ -53,10 +55,7 @@ export function TechnicianDashboard({ data }: TechnicianDashboardProps) {
         />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <RecentVisitsCard visits={data.recentVisits} />
-        <NextVisitsCard visits={data.nextVisits} />
-      </section>
+      <RecentVisitsCard visits={data.recentVisits} />
     </>
   );
 }
